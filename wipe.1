@@ -1,0 +1,427 @@
+.TH WIPE 1 "Wed Sep 20 17:32:02 CEST 2006" "Linu" "User Commands"
+.SH NAME
+wipe \- securely erase files from magnetic media
+.SH SYNOPSIS
+
+wipe [options] path1 path2 ... pathn
+.br
+
+.SH "CURRENT\-VERSION"
+This manual page describes version
+.B 0.21
+of
+.B wipe
+, released September 2006.
+
+
+.SH DESCRIPTION
+
+Recovery of supposedly erased data from magnetic media is easier than what many
+people would like to believe. A technique called Magnetic Force Microscopy
+(MFM) allows any moderately funded opponent to recover the last two or three
+layers of data written to disk;
+.B wipe
+repeatedly overwrites special patterns to the files to be destroyed, using the
+fsync() call and/or the O_SYNC bit to force disk access. In normal mode, 34
+patterns are used (of which 8 are random). These patterns were recommended in
+an article from Peter Gutmann (pgut001@cs.auckland.ac.nz) entitled "Secure
+Deletion of Data from Magnetic and Solid-State Memory". A quick mode allows you
+to use only 4 passes with random patterns, which is of course much less secure.
+
+.SH NOTE ABOUT JOURNALING FILESYSTEMS AND SOME RECOMMENDATIONS (JUNE 2004)
+Journaling filesystems (such as Ext3 or ReiserFS) are now being used by
+default by most Linux distributions.  No secure deletion program that does
+filesystem-level calls can sanitize files on such filesystems, because
+sensitive data and metadata can be written to the journal, which cannot be
+readily accessed.  Per-file secure deletion is better implemented in the
+operating system.
+
+Encrypting a whole partition with cryptoloop, for example, does not help
+very much either, since there is a single key for all the partition.
+
+Therefore
+.B wipe
+is best used to sanitize a harddisk before giving it to untrusted parties
+(i.e. sending your laptop for repair, or selling your disk).  Wiping size
+issues have been hopefully fixed (I apologize for the long delay).
+
+Be aware that harddisks are quite intelligent beasts those days.  They
+transparently remap defective blocks.  This means that the disk can keep
+an albeit corrupted (maybe slightly) but inaccessible and unerasable
+copy of some of your data.  Modern disks are said to have about 100%
+transparent remapping capacity.  You can have a look at recent discussions
+on Slashdot.
+
+I hereby speculate that harddisks can use the spare remapping area to
+secretly make copies of your data.  Rising totalitarianism makes this
+almost a certitude.  It is quite straightforward to implement some
+simple filtering schemes that would copy potentially interesting
+data.  Better, a harddisk can probably detect that a given file is
+being wiped, and silently make a copy of it, while wiping the original
+as instructed.
+
+Recovering such data is probably easily done with secret IDE/SCSI commands.
+My guess is that there are agreements between harddisk manufacturers and
+government agencies.  Well-funded mafia hackers should then be able to
+find those secret commands too.
+
+Don't trust your harddisk.  Encrypt all your data.
+
+Of course this shifts the trust to the computing system, the CPU, and so
+on.  I guess there are also "traps" in the CPU and, in fact, in every
+sufficiently advanced mass-marketed chip.  Wealthy nations can find those.
+Therefore these are mainly used for criminal investigation and "control of
+public dissent".
+
+People should better think of their computing devices as facilities
+lended by the DHS.
+
+.SH IMPORTANT WARNING -- READ CAREFULLY
+The author, the maintainers or the contributors of this package
+can NOT be held responsible in any way if
+.B wipe
+destroys something you didn't want it to destroy.
+Let's make this very clear. I want you to assume that this is a nasty program
+that will wipe out parts of your files that you didn't want it to wipe. So whatever
+happens after you launch
+.B wipe
+is your entire responsiblity.  In particular, no one guarantees that
+.B wipe
+will conform to the specifications given in this manual page.
+
+Similarly, we cannot guarantee that
+.B wipe
+will actually erase data, or that wiped data is not recoverable by
+advanced means.  So if nasties get your secrets because you sold
+a wiped harddisk to someone you don't know, well, too bad for you.
+
+The best way to sanitize a storage medium is to subject it to temperatures
+exceeding 1500K.  As a cheap alternative, you might use
+.B wipe
+at your own risk. Be aware that it is very difficult to assess whether
+running
+.B wipe
+on a given file will actually wipe it -- it depends on an awful lot of
+factors, such as : the type of file system the file resides on (in particular,
+whether the file system is a journaling one or not), the type of storage medium
+used, and the least significant bit of the phase of the moon.
+
+Wiping over NFS or over a journalling filesystem (ReiserFS etc.) will most
+probably not work.
+
+Therefore I strongly recommend to call
+.B wipe
+directly on the corresponding block device with the appropriate options. However
+.I THIS IS AN EXTREMELY DANGEROUS THING TO DO.
+Be sure to be sober. Give the right options. In particular : don't wipe a whole
+harddisk (eg. wipe -kD /dev/hda is bad) since this will destroy your master boot
+record. Bad idea. Prefer wiping partitions (eg. wipe -kD /dev/hda2) is good,
+provided, of course, that you have backed up all necessary data.
+
+.PP
+.SH "COMMAND\-LINE OPTIONS"
+.TP 0.5i
+.B -f (force; disable confirmation query)
+By default
+.B wipe
+will ask for confirmation, indicating the number of regular and special files
+and directories specified on the command line. You must type "yes" for
+confirmation, "no" for rejection. You can disable the confirmation query with
+the
+.B -f
+(force) option.
+
+.TP 0.5i
+.B -r (recurse into subdirectories)
+Will allow the removal of the entire directory tree. Symbolic links are not
+followed.
+
+.TP 0.5i
+.B -c (chmod if necessary)
+If a file or directory to be wiped has no write permissions set, will do a
+chmod to set the permission.
+
+.TP 0.5i
+.B -i (informational, verbose mode)
+This enables reporting to stdout. By default all data is written to stderr.
+
+.TP 0.5i
+.B -s (silent mode)
+All messages, except the confirmation prompt and error messages, are suppressed.
+
+.TP 0.5i
+.B -q (quick wipe)
+If this option is used,
+.B wipe
+will only make (by default) 4 passes on each file, writing
+random data. See option
+.B -Q
+.
+
+.TP 0.5i
+.B -Q <number-of-passes>
+Sets the number of passes for quick wiping. Default is 4.
+
+.TP 0.5i
+.B -a (abort on error)
+The program will exit with EXIT_FAILURE if a non-fatal error is encountered.
+
+.TP 0.5i
+.B -R (set random device OR random seed command)
+
+With this option which requires an argument you can specify an
+alternate /dev/random device, or a command who's standard output
+will be hashed using MD5-hashed. The distinction can be made using
+the -S option.
+
+.TP 0.5i
+.B -S (random seed method)
+
+This option takes a single-character argument, which specifies
+how the random device/random seed argument is to be used. The default random device
+is /dev/random. It can be set using the -R option.
+.PP
+.PD 0
+The possible single-character arguments are:
+.TP 0.5i
+.B r
+If you want the argument to be treated like
+a regular file/character device. This will
+work with /dev/random, and might also work
+with FIFOs and the like. 
+.TP 0.5i
+.B c
+If you want the argument to be executed as
+a command. The output from the command will
+be hashed using MD5 to provide the required
+seed. See the WIPE_SEEDPIPE environment
+variable for more info.
+.TP 0.5i
+.B p
+If you want wipe to get its seed by hashing
+environment variables, the current date and
+time, its process id. etc. (the random device
+argument will not be used). This is of course
+the least secure setting.
+.SP
+
+.TP 0.5i
+.B -M (select pseudo-random number generator algorythm)
+
+.PP
+.PD 0
+During the random passes,
+.B wipe
+overwrites the target files with a stream of binary data,
+created by the following choice of algorythms:
+.TP 0.5i
+.B l
+will use (depending on your system) your libc's random() or rand() pseudorandom
+generator. Note that on most systems, rand() is a linear congruential
+generator, which is awfully weak. The choice is made at compile-time with the
+HAVE_RANDOM define (see the Makefile).
+.TP 0.5i
+.B a
+will use the Arcfour stream cipher as a PRNG. Arcfour happens to be compatible
+with the well-known RC4 cipher. This means that under the same key, Arcfour
+generates exactly the same stream as RC4...
+.TP 0.5i
+.B r
+will use the fresh RC6 algorythm as a PRNG; RC6 is keyed with the 128-bit seed,
+and then a null block is repeatedly encrypted to get the pseudo-random stream.
+I guess this sould be quite secure. Of course RC6 with 20 rounds is slower than
+random(); the compile-time option WEAK_RC6 allows you to use a 4-round version
+of RC6, which is faster. In order to be able to use RC6, wipe must be compiled
+with ENABLE_RC6 defined; see the Makefile for warnings about patent issues.
+
+.SP
+In all cases the PRNG is seeded with the data gathered from the random device
+(see -R and -S options).
+
+.TP 0.5i
+.B -l <length>
+As there can be some problems in determining the actual size of a block device
+(as some devices do not even have fixed sizes, such as floppy disks or tapes),
+you might need to specify the size of the device by hand; <length> is the
+device capacity expressed as a number of bytes. You can use
+.B K
+(Kilo) to specify multiplication by 1024,
+.B M
+(Mega) to specify multiplication by 1048576,
+.B G
+(Giga) to specify multiplication by 1073741824
+and
+.B
+b
+(block) to specify multiplication by 512. Thus
+.TP 2.0i
+
+	1024 = 2b = 1K
+
+	20K33 = 20480+33 = 20513
+
+	114M32K = 114*1024*1024+32*1024.
+
+.TP 0.5i
+.B -o <offset>
+This allows you to specify an offset inside the file or device to be wiped. The
+syntax of <offset> is the same as for the
+.B -l
+option.
+
+.TP 0.5i
+.B -e
+Use exact file size: do not round up file size to wipe possible remaining junk
+on the last block.
+
+.TP 0.5i
+.B -Z
+Don't try to wipe file sizes by repeatedly halving the file size. Note that
+this is only attempted on regular files so there is no use if you use
+.B wipe
+for cleaning a block or special device.
+
+.TP 0.5i
+.B -F
+Don't try to wipe file names. Normally,
+.B wipe
+tries to cover file names by renaming them; this does NOT guarantee that the
+physical location holding the old file name gets overwritten.  Furthermore,
+after renaming a file, the only way to make sure that the name change is
+physically carried out is to call sync (), which flushes out ALL the disk
+caches of the system, whereas for ading and writing one can use the O_SYNC bit
+to get synchronous I/O for one file. As sync () is very slow, calling sync ()
+after every rename () makes filename wiping extremely slow.
+
+.TP 0.5i
+.B -k
+Keep files: do not unlink the files after they have been overwritten. Useful if
+you want to wipe a device, while keeping the device special file. This implies
+.B -F.
+
+.TP 0.5i
+.B -D
+Dereference symlinks: by default, wipe will never follow symlinks. If you
+specify -D however, wipe will consent to, well, wipe the targets of any
+symlinks you might happen to name on the command line.  You can't specify both
+-D and -r (recursive) options, first because of possible cycles in the
+symlink-enhanced directory graph, I'd have to keep track of visited files to
+guarantee termination, which, you'll easily admit, is a pain in C, and, second,
+for fear of having a (surprise!!) block device buried somewhere unexpected.
+
+.TP 0.5i
+.B -v
+Show version information and quit.
+
+.TP 0.5i
+.B -h
+Display help.
+
+.SH EXAMPLES
+.PP
+
+.TP 0.5i
+.B wipe -rcf /home/berke/plaintext/
+Wipe every file and every directory (option -r) listed under
+/home/berke/plaintext/, including /home/berke/plaintext/.
+
+Regular files will be wiped with 34 passes and their sizes will then be halved
+a random number of times. Special files (character and block devices, FIFOs...)
+will not. All directory entries (files, special files and directories) will be
+renamed 10 times and then unlinked. Things with inappropriate permissions will
+be chmod()'ed (option -c).  All of this will happen without user confirmation
+(option -f).
+
+.TP 0.5i
+.B wipe -kq /dev/hda3
+Assuming /dev/hda3 is the block device corresponding to the third partition of
+the master drive on the primary IDE interface, it will be wiped in quick mode
+(option -q) i.e. with four random passes.  The inode won't be renamed or
+unlinked (option -k). Before starting, it will ask you to type ``yes''.
+
+.TP 0.5i
+.B wipe -kqD /dev/floppy
+Since
+.B wipe
+never follows symlinks unless explicitly told to do so, if you want to wipe
+/dev/floppy which happens to be a symlink to /dev/fd0u1440 you will have to
+specify the -D option. Before starting, it will ask you to type ``yes''.
+
+.TP 0.5i
+.B wipe -rfi >wipe.log /var/log/*
+Here, wipe will recursively (option -r) destroy everything under /var/log,
+excepting /var/log. It will not attempt to chmod() things. It will however be
+verbose (option -i). It won't ask you to type ``yes'' because of the -f option.
+
+.TP 0.5i
+.B wipe -Kq -l 1440k /dev/fd0
+Due to various idiosyncracies of the operating system, it's not always easy
+to obtain the number of bytes a given device might contain (in fact, that
+quantity can be variable). This is why you sometimes need to tell
+.B wipe
+the amount of bytes to destroy. That's what the -l option is for. Plus,
+you can use b,K,M and G as multipliers, respectively for 2^9 (512),
+2^10 (1024 or a Kilo), 2^20 (a Mega) and 2^30 (a Giga) bytes.
+You can even combine more than one multiplier !! So that 1M416K = 1474560 bytes.
+
+.SH BUGS/LIMITATIONS
+.PP
+
+.B Wipe
+should work on harddisks and floppy disks; however the internal cache of some
+harddisks might prevent the necessary writes to be done to the magnetic
+surface. It would be funny to use it over NFS. Under CFS (Cryptographic File
+System) the fsync() call has no effect; wipe has not much use under it anyway -
+use wipe directly on the corresponding encrypted files. Also, under Linux, when
+using a device mounted thru a loopback device, synchronous I/O does not get
+propagated cleanly.
+
+For wiping floppy disks, at least under Linux, there is no way, besides obscure
+floppy-driver specific ioctl's to determine the block size of the disk. In
+particular, the BLKGETSIZE ioctl is not implemented in the floppy driver. So,
+for wiping floppies, you must specify the size of the floppy disk using the -l
+option, as in the last example. This option is normally not needed for other
+fixed block devices, like IDE and SCSI devices.
+
+File name wiping is implemented since version 0.12. I don't know how efficient
+it is. It first changes the name of the file to a random- generated name of
+same length, calls sync (), then changes the name to a random-generated name of
+maximal length.
+
+File size wiping is implemented by repeatedly truncating the file to half of
+its size, until it becomes empty; sync () is called between such operations.
+
+Note that it is still not possible to file creation date and permission bits
+portably. A wipe utility working at the block device level could be written
+using the ext2fs library.
+
+.SH AUTHOR AND LICENCE
+.B Wipe
+was written by Berke Durak (to find my email address,
+just type
+.B echo berke1ouvaton2org|tr 12 @.
+in a shell).
+
+.B Wipe
+is released under the conditions of the GNU General
+Public License.
+
+.SH FILES
+.B /dev/random
+is used by default to seed the pseudo-random number generators.
+
+.SH ENVIRONMENT VARIABLES
+.B WIPE_SEEDPIPE
+If set,
+.B wipe
+will execute the command specified in it (using popen()), and will hash the
+command's output with the MD5 message-digest algorythm to get a 128-bit seed
+for its PRNG. For example, on systems lacking a /dev/random device, this
+variable might be set in /etc/profile to a shell script which contains various
+commands such as ls, ps, who, last, etc. and which are run asynchronously in
+order to get an output as less predictable as possible.
+
+.SH SEE ALSO
+
+open(2), fsync(2), sync(8), bdflush(2), update(8), random(3)
+.br

@@ -1,0 +1,174 @@
+wipe 0.21 by Berke Durak Wed Sep 20 17:32:02 CEST 2006
+
+WHAT IS WIPE ?
+
+"wipe" is a short, nice tool for securely wiping out files from magnetic media.
+Purpose: to quickly wipe out traces of your latest dissident activities
+(cryptography etc.) when you realise that your local SSP (State Security
+Police, aka. NSA, DST, CIA, MIT (Turkish Intelligence Agency), Mossad, ...)
+is knocking at your door.
+
+QUICK START
+
+See file "QUICKSTART".
+
+RTFM
+
+Please READ THE MAN PAGE for more detailed information on wipe. Also, if you
+haven't done it yet, read Peter Gutmann's article on "Secure Deletion of Data
+from Magnetic and Solid-State Memory", included in this directory, which can
+also be retrieved from
+http://www.cs.auckland.ac.nz/~pgut001/pubs/secure_del.html
+
+CHANGES
+
+See the file CHANGES for a short history of wipe. You can get the latest
+version of wipe at these addresses:
+	http://abaababa.ouvaton.org/wipe/
+
+COPYING
+
+Wipe is under the GNU Public License (see file COPYING).
+
+PROBLEMS
+
+Wiping is a tricky affair. "wipe" tries to do everything that a portable
+user-level program can do to securely erase the given files. However,
+there are several limitations:
+
+	1.Since file meta information such as file name, size,
+	  creation/modification/access dates as well as directory
+ 	  structures are filesystem-specific, and as file systems
+          tend to have extremely various architectures, there is
+	  no hope in seeing a uniform interface for accessing
+	  low-level filesystem data. Therefore a portable program
+	  must be filesystem-independent. It must thus use
+	  standard file operations in a way that will make most
+	  file systems effectively overwrite the desired portions
+	  of the magnetic media.
+
+	2.Since IDE and SCSI hard disks are driven by their own
+	  logic, nothing guarantees that the required data is
+	  written out effectively at the required place, i.e.
+	  over the old data.
+
+        3.The successfull erasure of off-track data is a function of
+          drive temperature, usage history, drive mechanics and
+          luck.
+
+Therefore I cannot and will not guarantee you that the files erased with wipe
+are unrecoverable. SOME RECENT VERSIONS (0.11, 0.12, 0.13) HAVE SERIOUS BUGS:
+I was too lazy to check if wipe was still working as expected after doing
+various improvements. It was not. Mea culpa. The current version (0.14)
+has been more or less verified, in different wipe modes, on different
+files and block devices.
+
+You can use "strace" on wipe to check that it effectively does the announced
+writes with different random data. From a software-level, wipe seems to do what
+it claims to do, i.e. overwriting, renaming, truncating, etc. Verification at
+the hardware-level requires specialised hardware. I don't have hardware.
+If anyone has got access to such hardware and is willing to check the
+effectiveness of wipe (and other secure deletion tools) PLEASE INFORM THE
+PUBLIC ABOUT IT.
+
+Verifications made on an Ext2 file system mounted through loopback shows
+that wipe 0.14 correctly erases the data blocks of files. However, file name
+wiping did not work as well as expected: plain filenames were still
+discernable at the block level after wiping a large directory tree.
+But filling the filesystem with a maximum size file and wiping it
+(as a crude but portable way to wipe out free blocks) erased the
+remaining plain filenames.
+
+There will be problems with files having "holes" in them; as wipe will
+try to completely overwrite those files with random data, the holes
+will get filled, possibly exceeding available disk space.
+
+Briefly: you can reasonably expect that the DATA contained in your files
+is EFFECTIVELY WIPED. However on complex file systems like Ext2
+it is likely that FILE META-INFORMATION is NOT securely erased, or
+even not overwritten at all.
+
+RECOMMANDATIONS FOR MAXIMUM SAFETY
+
+For maximum safety, use an encrypted file system.
+Use wipe to clean whole partitions. For example, if I had guilty
+stuff on /dev/hda3, assuming that /dev/hda3 is less than, say 70% full,
+I would first mount /dev/hda3 on /mount, then do
+	wipe -cfrsF /mount/
+to wipe the contents of the data files using 34 passes, then
+	wipe -kqZ -Q 1 /dev/hda3
+to erase file meta-information. However if /dev/hda3 is more
+than 70% full, it might be quicker to erase the whole hard disk
+using 34 passes:
+	wipe -kZ /dev/hda3
+If you don't have to hide that you have guilty stuff but just want
+to be sure that someone else won't get at the CONTENTS of that guilty
+stuff, or in other words if you don't care about wiping file names,
+sizes etc. but just want to wipe out file contents, simply do
+	wipe -cfrZF /mount/.
+
+And, last but not least, think of TEMPEST monitoring. I don't know
+how feasible it is to remotely eavesdrop your computer's internal
+bus or your IDE ribbon but using the "-s" (silent) option will prevent
+wipe from outputting to your monitor the names of all the files it
+erases. Eavesdropping your CRT is much easier for amateurs as well
+as for professionals.
+
+REQUIREMENTS
+
+wipe used to require Linux kernel 2.0.x or newer, in order to use the O_SYNC
+bit, and the /dev/random device. Since version 0.10, it no longer expressely
+requires O_SYNC, uses strong PRNGs and can gather the required seeds from
+different sources, including /dev/random-like devices, by hashing the output of
+a user-defined command or, in the worst case, by hashing its PID, the local
+date/time and its environment variables.
+
+Thanks to Chris L. Mason <cmason@unixzone.com> who initially motivated me to
+make wipe portable and helped me with compilation tips, bug reports,
+suggestions and patches. He maintains a site with reviews on UNIX software at
+http://www.unixzone.com
+
+THANKS
+
+Many thanks to the following people who sent in bug reports, compilation tips,
+and even whole patches ! In alphabetical order, hoping to not forget anyone,
+they are:
+
+	Alexey Marinichev
+	Chris L. Mason
+	Jason Axley
+	Michael S. Rhee
+	Paul H. Hargrove
+	Thomas Schoepf
+
+INSTALLATION
+
+To compile wipe, type "make" to get a list of supported unices. If your
+operating system appears in the list, type "make <your operating system>";
+otherwise try "make generic". If this does not work, you'll have to
+hand-edit the Makefile: please mail me about your results.
+
+You can then copy the "wipe" executable in /usr/local/bin/ or in ~/bin if you
+wish. Install the man page in /usr/local/man/man1/, or use "man -l wipe.1" to
+read the manual page from wipe's directory.
+
+On systems lacking a /dev/random-like device, the shell script "randompipe.sh"
+can be used with the -R and -S options or the WIPE_SEEDPIPE environment
+variable. For more info, see the man page.
+
+OTHER WIPE IMPLEMENTATIONS
+
+There are several file-wiping tools available for Windows. There are two other
+ones I know for Linux: Calvin Clark's wipe 1.0beta, and Tom Viers' wipe
+v0.55beta3. These have exactly the same semantics as mine, i.e. their aim is to
+overwrite files with data in order to prevent recovery of their contents. Tom
+Viers' wipe is very similar to mine and is also based on Peter Gutmann's
+article.  However, Calvin's wipe does simply write zeroes out on the file,
+which is not secure at all (RTF article !). There is also Van Hauser's srm
+(secure remove) available at http://r3wt.base.org, and which uses /dev/urandom
+as a PRNG.
+
+AUTHOR
+
+I can be reached at <berke@ouvaton.org>.  Send bug reports, ideas for
+improvement, compilation problems and other comments to this address.

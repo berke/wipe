@@ -1,0 +1,106 @@
+Sat Feb 14 18:30:16 CET 1998
+	version 0.02 - Fixed behavioural bug: wouldn't chmod directories.
+
+Fri Jul 24 13:45:02 EEST 1998
+	version 0.03 - Added silent option.
+
+Thu Aug  6 11:35:13 EEST 1998
+	version 0.10 - Major changes in this version
+                       added many conditional compilation statements for
+                       portability. now has got auxiliary random seed
+                       sources, which can be used if a /dev/random device is
+                       not available. now can use RC6 for generating the
+                       cryptographically-strong random stream for
+                       overwriting the data, as well as arcfour. 
+                       restructured source code. currently compiles under
+                       Linux 2.0.35, SunOS 5.5.1 and AIX 4.1.
+                       
+Tue Aug 11 11:01:36 EEST 1998
+	version 0.11 - Added compilation settings for Solaris 2.6 x86/SPARC,
+	               FreeBSD 2.2.6-STABLE; fixed a bug in the pipe handling
+	               in random.c (thanks to C.Mason for these).
+	               lengthened the period of the RC6-based PRNG from
+	               an average 2^127 to a full 2^128 (thanks to John Kelsey
+	               <kelsey@plnet.net> for explaining the period issues).
+
+Wed Apr 14 15:32:54 EEST 1999
+	version 0.12 - Fixed a very SERIOUS bug in fill_random: the upper half of
+                       the target buffer was NOT filled, therefore HALF OF THE
+                       DATA was not subject to the random passes.
+                       now wipe works on block as well as character devices.
+                       wipe also tries to wipe file names and file sizes.
+                       new options for letting the wiped files on the filesystem
+                       and inhibiting file name and file size wiping.
+
+Fri Jun 18 14:47:27 CEST 1999
+	version 0.13 - This version is SERIOUSLY BROKEN.
+                       curiously the serious bug that should have been fixed in
+                       version 0.12 popped up again. Thanks to Michael S. Rhee
+                       for his diagnostic. I did some major changes in wipe's
+                       inner workings. It now precalculates the different
+                       fixed-pattern buffers. It is now able to do asynchronous
+                       i/o to some extent, so that it can fill the random
+                       buffers while the OS or the hardware is busy writing out
+                       changes.  However asynchronous i/o (i.e. the O_NONBLOCK
+                       flag) is not supported in current Linux kernels. The way
+                       to do it would be to use a separate thread (or a process
+                       but that would require use shared memory). However it is
+                       faster now.
+
+Sun Jun 20 17:16:30 CEST 1999
+	version 0.14 - Consider version 0.13 as SERIOUSLY BROKEN. Filename
+	               wiping has been cleaned up. Two extra options for
+	               filename wiping have been added. Various bugs have
+	               been fixed. This version is bug-free and 100% reliable.
+
+Mon Jul 26 22:14:45 EEST 1999
+	version 0.15 - Some minor fixes. Thanks to Thomas Schoepf and Alexey
+                       Marinichev for their bug-reports and patches: wipe was
+                       crashing when it was operating on a single zero-length
+                       file. Also, wipe was screwing up when attempting to
+                       rename a file (during filename wiping). Furthermore,
+                       wipe will no more ask for confirmation over stderr if
+                       stderr is not a tty; it will print an error message and
+                       exit. Use "-f" (force) option in scripts. Also improved
+                       general behaviour and presentation. Added well-defined
+                       return codes.  Fixed a bug in length calculation. New
+                       behaviour: wipe will now by default round up lengths to
+                       the next multiple of file system block size so as to
+                       wipe data possibly remaining in the last block of a
+                       file; this behaviour can be inhibited with the new "-e"
+                       option.
+
+Thu Dec 30 21:50:59 CET 1999
+	version 0.16 - Included fix by Jason Axley for compiling under Solaris
+                       2.6.  Included patch sent by Paul H. Hargrove fixing a
+                       serious bug (wipe-0.15 is making 34 random passes rather
+                       than the proper mix of random and deterministic passes).
+
+Mon Nov 25 23:13:45 CET 2002
+        version 0.17 - Removed somewhat useless REMOVE_ON_INT define. Cosmetic
+                       changes.  Added a -D option to make wipe follow symlinks
+                       given on the command line.  Improved wiping statistics ;
+                       now reports number of symlinks and special files encoun-
+                       tered separately.  Updated e-mail addresses and URLs
+                       (wow, free web hosting dies FAST !).  Plus CVS, reinden-
+                       tation and Vim modelines.  I'd call this lifting.  Oh,
+                       and it now should work on devices and files greater
+                       than 2 gigabytes.  And I added some randomisation when
+                       it tries the size of a file by resizing it.
+
+Mon Feb  2 14:40:55 CET 2003
+	version 0.18 - Arf, an important bugfix was lost during the v0.17 cleanup.
+                       When called with -r option, wipe would traverse to parent
+                       directories ! Fixed, again (thanks to Thomas).
+
+Sat Sep 13 14:53:11 CEST 2003
+	version 0.19 - wipe will hopefully work on large files now
+        
+Sat Jun 12 19:21:01 CEST 2004
+        version 0.20 - Thanks to Jim Paris for a patch fixing the
+                       large file issue.  Bumped up the version number a
+                       bit.
+
+Wed Sep 20 17:32:02 CEST 2006
+        version 0.21 - Included Debian patch for severe bug that affected the
+                       computation of the size of large partitions.

@@ -1,0 +1,218 @@
+.TH WIPE 1 "Sal Ağu 19 19:55:18 DAZ YS 1997" "Linux" "Kullanıcı Komutları"
+.SH İSİM
+wipe \- dosyaların manyetik ortamdan güvenli bir şekilde silinmesini sağlar
+.SH ÖZET
+
+wipe [-f][-c][-r][-q][-i] <filespec>
+.br
+
+.SH UYARI
+
+Bu türkçe elkitabı sayfası ingilizce olanından daha eskidir ve programa
+son eklenen bir kaç seçeneğe değinmemektedir.
+
+.SH AÇIKLAMA
+
+Manyetik ortamdan silindiği düşünülen bilgilerin geri alınması çoğu kişinin
+sandığından daha kolaydır. Bir dosyanın data bloklarının üzerine başka
+bilgiler yazılmış olsa bile, Manyetik Güç Mikroskopisi adı verilen ve asgari
+kaynaklara sahip olan herhangi bir düşmanın erişiminde olan bir teknik,
+disk'e yazılmış son iki veya üç katmanın kolayca elde edilmesini
+sağlamaktadır.
+.B Wipe
+yokedilecek dosyanın üzerine tekrar tekrar özel bit örüntüleri yazar; sistemin
+fsync() çağrısını ve open()'in O_SYNC parametresini kullanarak manyetik
+medya'ya bu örüntülerin aktarılmasını sağlar. Olağan konumda, 8'i eşit
+dağılımlı rasgele bit örüntüleri olmak üzere toplam 34 örüntü dosyaya üstüste
+yazılır. Bu örüntüler, Peter Gutmann'ın (pgut001@cs.auckland.ac.nz) "Bilginin
+Manyetik ve Katıhal Bellekten Güvenli Olarak Silinmesi" adlı yazısında
+önerilmiştir. Çok daha az güvenli olmakla beraber, rasgele örüntülerle sadece
+4 geçiş yapan hızlı bir konum da kullanılabilir.
+
+.PP
+.SH "KOMUT SATIRI SEÇENEKLERİ"
+.TP 0.5i
+.B -f (onay sorusunu etkisizleştir)
+Bu seçenek belirtilmediği takdirde 
+.B wipe
+silinecek dosya ve dizinlerin sayılarını belirtip onay istiyecektir.
+Bu onay sorusuna "yes" veya "no" cevabı vermeniz gerekiyor.
+
+.TP 0.5i
+.B -r (altdizinlere gir)
+Tüm altdizinleriyle beraber dizinlerin silinmesine olanak sağlar. Simgesel
+bağlar takip edilmez.
+
+.TP 0.5i
+.B -c (gerekirse dosya izin bitlerini değiştir)
+Bu seçenek, eğer silinecek bir dosyanın (dizinin) yazma (yazma, okuma veya çalıştırma)
+izin bitleri kapalı ise izinleri değiştirmek için chmod () sistem çağrısını
+kullanılmasını sağlar.
+
+.TP 0.5i
+.B -i (ayrıntılı bilgi konumu)
+Bu konum stdout'a ayrıntılı bilgi yazılmasını sağlar. Olağan konumda
+bütün iletiler stderr'e yazılır.
+
+.TP 0.5i
+.B -s (sessiz çalışma konumu)
+Bu konumda hata iletileri ile başlangıçtaki onay sorusu dışındaki bütün iletileri
+kaldırır.
+
+.TP 0.5i
+.B -q (hızlı silme konumu)
+Bu konumda
+.B wipe
+her dosya üstünde sadece 4 geçiş yapacaktır. Bu geçişlerde rasgele bilgi
+yazacaktır.
+
+.TP 0.5i
+.B -a (hata durumda işlemi iptal et)
+Program kurtarılamaz bir hata durumunda EXIT_FAILURE koduyla çıkacaktır.
+
+.TP 0.5i
+.B -R <rasgele bilgi aygıtı VEYA rasgele tohum komutu>
+
+Bir tane parametre gerektiren bu seçenekle farklı bir
+/dev/random aygıtı veya olağan çıktısı MD5 öz çıkarma algoritmasıyla
+kıyılacak bir komut belirtebilirsiniz. Bu parametrenin
+tam anlamı -S seçeneği ile belli edilir.
+
+.TP 0.5i
+.B -S (rasgele tohumlama yöntemi)
+
+Bu seçenek tek harflik bir parametre alır; bu harf rasgele bilgi aygıtı/rasgele
+tohum komutunu parametresinin nasıl kullanılacağını belirler. Olağan
+rasgele bilgi aygıtı /dev/random'dur, farklı değerleri -R seçeneği ile
+belirtilebilir.
+.PP
+.PD 0
+Mümkün olan tek harflik seçenekler şunlardır:
+.TP 0.5i
+.B r
+Rasgele bilgi aygıtı/rasgele tohum komutu
+parametresini
+okunacak olağan bir dosya veya karakter
+aygıtı olarak muamele görmesini sağlar.
+Bu /dev/random aygıtları ve FIFO (ilk giren
+ilk çıkar kuyrukları) veya UNIX socket'ler
+için uygun seçimdir.
+.TP 0.5i
+.B c
+Sözkonusu parametrenin bir komut olarak
+çalıştırılması için. Gerekli tohumlar
+komutun çıktısının MD5 ile kıyılmasından
+elde edilecektir. Daha ayrıntılı bilgi
+için WIPE_SEEDPIPE çevre değişkenine
+bakınız.
+.TP 0.5i
+.B p
+Daha uygun hiç bir rasgele bilgi kaynağı
+yoksa daha az güvenli olan bu seçeneği
+belirtiniz: wipe gerekli tohumlarını
+çevre değişkenlerini, tarihi ve zamanı,
+program numarasını vs. kullanarak elde
+edecektir.
+.SP
+
+.TP 0.5i
+.B -M (l|a|r|p) (sözde rasgele sayı üretici algoritması)
+
+.PP
+.PD 0
+Rasgele geçişlerde dosyaların üzerine rasgele
+rasgele bilgi katarı belirteceğiniz harfle
+aşağıdaki algoritmalarla üretilecektir:
+.TP 0.5i
+.B l
+sisteminize göre C kütüphanesinin random()
+veya rand() üreticisini kullanır. Çoğu
+sistemde rand() doğrusal eşleşik ve
+dolayısıyla son derece zayıf bir üreticidir.
+rand() ile random() arasındaki seçim
+derlemede HAVE_RANDOM tanımlaması ile
+belirlenir (Makefile'a bakınız).
+.TP 0.5i
+.B a
+Arcfour katar şifresini SRSÜ olarak
+kullanır. Arcfour tanınmış RC4 şifresiyle
+uyumludur: bu aynı anahtar ile tamamen
+aynı katarı üreteceği anlamına gelir...
+.TP 0.5i
+.B r
+yeni çıkan RC6 algoritmasını SRSÜ
+olarak kullanır; RC6 128 bit'lik tohumla
+anahtarlandıktan sonra, rasgele bilgi
+katarı sıfırlardan oluşan bir bloğun
+üstüste şifrelenmesinden elde edilir.
+Doğal olarak 20 döngülük RC6 C kütüphanesinin
+random()'undan daha yavaştır; derleme
+zamanında WEAK_RC6 tanımını yaparsanız
+20 yerine 4 döngü kullanılır.
+Dikkat! Patent sorunlarından dolayı,
+RC6'yı kullanabilmeniz için Makefile'ı
+okuyup, orda belirtilen koşullar uygun
+ise wipe'ı ENABLE_RC6 ile derlemeniz
+gerekir.
+
+.SP
+Her durumda SRSÜ rasgele bilgi aygıtının çıktısıyla
+tohumlanır (-R ve -S seçeneklerine bakınız).
+
+.TP 0.5i
+.B -v (sürüm)
+Sürüm bilgisini gösterir ve çıkar.
+
+.TP 0.5i
+.B -h (yardım)
+Bununla kısa bir yardım bilgisi gösterir.
+
+.SH ÖRNEKLER
+.PP
+
+wipe -rcf /home/berke/plaintext/*
+
+wipe -q /dev/hda3
+
+wipe -rfi >wipe.log /var/log/auth.*
+
+.SH HATALAR/SINIRLAMALAR
+.PP
+
+.B Wipe'ın
+sabit diskler ve disketler üzerine etkili olması gerekir; ancak bazı sabit
+disklerin cep bellekleri manyetik ortama gerekli yazımların yapılmasını
+engelliyebilir.
+.B Wipe'ı
+NFS üzerinden kullanmak pek mantıklı değildir. CFS altında ise
+(Cryptographic File System - Şifreli Kütük Sistemi)
+.B wipe'ın
+pek bir yararı olmaz; gerçek dosya sistemi altındaki ilgili şifreli
+dosyalar üzerinde 
+.B wipe'ın
+doğrudan kullanılması çok daha yararlı olacaktır.
+
+Dikkat edilmesi gereken bir nokta ise dosyaların adları, yaratılış,
+değişim ve erişim tarihleri ile boyutları ile ilgili bilgileri silen ve
+dosya sisteminin inceliklerinden bağımsız olup kullanıcı konumunda
+çalışabilecek bir silme programı yapmak imkansız. Bu ancak, çekirdeğin
+dosyaların güvenli olarak silinmesini sağlayan çağrılar sunmasıyla
+gerçekleşebilir. Bu durumda masumane dosya isimleri kullanmanız önerilir.
+
+.SH PROGRAMI YAZAN
+.B Wipe
+isimli komutçuk Berke Durak (berke@ouvaton.org)
+tarafından yazılmıştır ve GNU Genel Kamu Lisansı koşulları altında sunulmaktadır.
+.B Wipe
+Peter Gutmann'ın bir yazısındaki bilgilere dayanmaktadır.
+
+.SH DOSYALAR
+.B /dev/urandom
+libc'nin random() adlı toplanır geribeslemeli sözde rasgele sayı üreticisini
+tohumlamak için kullanılıyor. Yazılan her 1024 sekizli için /dev/urandom'dan
+32 bitlik bir tohum alınır.
+
+.SH GÖNDERMELER
+
+open(2), fsync(2), sync(8), bdflush(2), update(8), random(3)
+.br

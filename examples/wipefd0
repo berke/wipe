@@ -1,0 +1,3 @@
+#!/bin/sh
+
+exec wipe -kqfZ -l 1440K /dev/fd0

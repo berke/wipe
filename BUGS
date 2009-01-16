@@ -1,0 +1,15 @@
+		       Known Bugs and Problems
+
+
+Tue Jul 27 14:28:16 EEST 1999
+	Some file systems, such as ext2 can report incorrect block sizes
+when examining files via stat (); for example, on a 1024-byte ext2 file
+system, the file system block size is reported as being 4096. This can
+cause minor problems (short writes) when wiping a file whose size is
+not a multiple of the reported block size on a file system having no
+more free blocks, since wipe will by default round up the size to the
+next multiple of the reported block size in order to erase possible
+data remaining beyond the end of the file (this can happen if the file
+shrinked, for example). I can't think of any non-invasive method for
+getting the real block size. Since this is a very small problem, I think
+that it is not worth adding an option for specifying the real block size.
