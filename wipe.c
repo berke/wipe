@@ -227,7 +227,7 @@ inline static void fill_random_from_table (char *b,
 
 inline static void fill_random (char *b, int n)
 {
-    rand_Fill (b, n);
+    rand_Fill ((u8 *) b, n);
 }
 
 /* fill_random ***/
@@ -560,6 +560,105 @@ static int wipe_filename_and_remove (char *fn)
 
 /* wipe_filename_and_remove ***/
 
+#include <sys/time.h>
+
+static double
+get_time_of_day(void)
+{
+    struct timeval tv;
+    gettimeofday(&tv, 0);
+    return (tv.tv_usec * 1e-6 + tv.tv_sec);
+}
+
+static double eta_start_time;
+
+static void
+eta_begin()
+{
+    eta_start_time = get_time_of_day();
+}
+
+static void
+eta_progress(char *buf, size_t bufsiz, double frac)
+{
+    double now;
+    double elapsed;
+    double total;
+    double seconds_per_year;
+    double remaining;
+    long lsec;
+    int sec;
+    long lmin;
+    int min;
+    long lhours;
+    int hours;
+    long ldays;
+    int days;
+    int weeks;
+    
+    now = get_time_of_day();
+    elapsed = now - eta_start_time;
+
+    buf[0] = '\0';
+    if (elapsed < 5 && frac < 0.1)
+        return;
+
+    total = elapsed / frac;
+    seconds_per_year = 365.25 * 24 * 60 * 60;
+    remaining = total - elapsed;
+    if (remaining > seconds_per_year)
+    {
+        snprintf(buf, bufsiz, "  ETA %g years", remaining / seconds_per_year);
+        return;
+    }
+    lsec = remaining;
+    sec = lsec % 60;
+    lmin = lsec / 60;
+    min = lmin % 60;
+    lhours = lmin / 60;
+    hours = lhours % 24;
+    ldays = lhours / 24;
+    days = ldays % 7;
+    weeks = ldays / 7;
+    if (weeks > 0)
+    {
+        snprintf(buf, bufsiz, "  ETA %dw %dd", weeks, days);
+        return;
+    }
+    if (days > 0)
+    {
+        snprintf(buf, bufsiz, "  ETA %dd %dh", days, hours);
+        return;
+    }
+    if (hours > 0)
+    {
+        snprintf(buf, bufsiz, "  ETA %dh%02dm", hours, min);
+        return;
+    }
+    snprintf(buf, bufsiz, "  ETA %dm%02ds", min, sec);
+}
+
+
+static void
+pad(char *buf, size_t bufsiz)
+{
+    size_t len;
+    
+    len = strlen(buf);
+    while (len + 1 < bufsiz)
+        buf[len++] = ' ';
+    buf[len] = '\0';
+}
+
+
+static void
+backspace(char *dst, const char *src)
+{
+    while (*src++)
+        *dst++ = '\b';
+    *dst = '\0';
+}
+
 /*** dothejob -- nonrecursive wiping of a single file or device */
 
 /* determine parameters of region to be wiped
@@ -808,6 +907,7 @@ static int dothejob (char *fn)
                 buffers_to_wipe, o_buffer_size, wi.n_passes);
 
         /* do the passes */
+        eta_begin();
         for (i = 0; i<wi.n_passes; i++) {
             ssize_t wr;
 
@@ -831,8 +931,20 @@ static int dothejob (char *fn)
                 if (!o_silent) {
                     t = time (0);
                     if ((bpi && (t-lt)) || ((t-lt>2) && j<(buffers_to_wipe>>1))) {
-                        fprintf (stderr,
-                                "[%8ld / %8ld]\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b", (long) j, (long) buffers_to_wipe);
+                        char buf1[30];
+                        char buf1_bs[sizeof (buf1)];
+                        char buf2[18];
+                        char buf2_bs[sizeof(buf2)];
+                        snprintf(buf1, sizeof(buf1),
+                                "[%8ld / %8ld]", (long) j, (long)buffers_to_wipe);
+                        backspace(buf1_bs, buf1);
+                        eta_progress(buf2, sizeof(buf2),
+                            ((double)i + ((double)j / buffers_to_wipe)) / wi.n_passes);
+                        if (buf2[0])
+                            pad(buf2, sizeof(buf2));
+                        backspace(buf2_bs, buf2);
+                        fprintf(stderr, "%s%s%s%s", buf1, buf2, buf2_bs,
+                            buf1_bs);
                         fflush (stderr);
                         lt = t;
                         bpi = 1;
