@@ -1,4 +1,4 @@
-wipe 0.21 by Berke Durak Wed Sep 20 17:32:02 CEST 2006
+wipe 0.22 by Berke Durak Mon Feb 16 2009
 
 WHAT IS WIPE ?
 
@@ -24,7 +24,7 @@ CHANGES
 
 See the file CHANGES for a short history of wipe. You can get the latest
 version of wipe at these addresses:
-	http://abaababa.ouvaton.org/wipe/
+  http://lambda-diode.com/software/wipe/
 
 COPYING
 
@@ -36,21 +36,21 @@ Wiping is a tricky affair. "wipe" tries to do everything that a portable
 user-level program can do to securely erase the given files. However,
 there are several limitations:
 
-	1.Since file meta information such as file name, size,
-	  creation/modification/access dates as well as directory
- 	  structures are filesystem-specific, and as file systems
+  1.Since file meta information such as file name, size,
+    creation/modification/access dates as well as directory
+    structures are filesystem-specific, and as file systems
           tend to have extremely various architectures, there is
-	  no hope in seeing a uniform interface for accessing
-	  low-level filesystem data. Therefore a portable program
-	  must be filesystem-independent. It must thus use
-	  standard file operations in a way that will make most
-	  file systems effectively overwrite the desired portions
-	  of the magnetic media.
+    no hope in seeing a uniform interface for accessing
+    low-level filesystem data. Therefore a portable program
+    must be filesystem-independent. It must thus use
+    standard file operations in a way that will make most
+    file systems effectively overwrite the desired portions
+    of the magnetic media.
 
-	2.Since IDE and SCSI hard disks are driven by their own
-	  logic, nothing guarantees that the required data is
-	  written out effectively at the required place, i.e.
-	  over the old data.
+  2.Since IDE and SCSI hard disks are driven by their own
+    logic, nothing guarantees that the required data is
+    written out effectively at the required place, i.e.
+    over the old data.
 
         3.The successfull erasure of off-track data is a function of
           drive temperature, usage history, drive mechanics and
@@ -94,18 +94,18 @@ For maximum safety, use an encrypted file system.
 Use wipe to clean whole partitions. For example, if I had guilty
 stuff on /dev/hda3, assuming that /dev/hda3 is less than, say 70% full,
 I would first mount /dev/hda3 on /mount, then do
-	wipe -cfrsF /mount/
+  wipe -cfrsF /mount/
 to wipe the contents of the data files using 34 passes, then
-	wipe -kqZ -Q 1 /dev/hda3
+  wipe -kqZ -Q 1 /dev/hda3
 to erase file meta-information. However if /dev/hda3 is more
 than 70% full, it might be quicker to erase the whole hard disk
 using 34 passes:
-	wipe -kZ /dev/hda3
+  wipe -kZ /dev/hda3
 If you don't have to hide that you have guilty stuff but just want
 to be sure that someone else won't get at the CONTENTS of that guilty
 stuff, or in other words if you don't care about wiping file names,
 sizes etc. but just want to wipe out file contents, simply do
-	wipe -cfrZF /mount/.
+  wipe -cfrZF /mount/.
 
 And, last but not least, think of TEMPEST monitoring. I don't know
 how feasible it is to remotely eavesdrop your computer's internal
@@ -134,13 +134,14 @@ Many thanks to the following people who sent in bug reports, compilation tips,
 and even whole patches ! In alphabetical order, hoping to not forget anyone,
 they are:
 
-	Alexey Marinichev
-	Chris L. Mason
-	Jason Axley
-	Michael S. Rhee
-	Paul H. Hargrove
+  Alexey Marinichev
+  Chris L. Mason
+  Jason Axley
+  Erik Vogan, 64-bit offset fix
+  Michael S. Rhee
+  Paul H. Hargrove
   Peter Miller, for contributing an ETA patch
-	Thomas Schoepf
+  Thomas Schoepf
 
 INSTALLATION
 
@@ -171,5 +172,5 @@ as a PRNG.
 
 AUTHOR
 
-I can be reached at <berke@ouvaton.org>.  Send bug reports, ideas for
+I can be reached at <berke@lambda-diode.com>.  Send bug reports, ideas for
 improvement, compilation problems and other comments to this address.
