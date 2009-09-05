@@ -25,8 +25,9 @@ repeatedly overwrites special patterns to the files to be destroyed, using the
 fsync() call and/or the O_SYNC bit to force disk access. In normal mode, 34
 patterns are used (of which 8 are random). These patterns were recommended in
 an article from Peter Gutmann (pgut001@cs.auckland.ac.nz) entitled "Secure
-Deletion of Data from Magnetic and Solid-State Memory". A quick mode allows you
-to use only 4 passes with random patterns, which is of course much less secure.
+Deletion of Data from Magnetic and Solid-State Memory". The normal mode takes
+35 passes (0-34). A quick mode allows you to use only 4 passes with random
+patterns, which is of course much less secure.
 
 .SH NOTE ABOUT JOURNALING FILESYSTEMS AND SOME RECOMMENDATIONS (JUNE 2004)
 Journaling filesystems (such as Ext3 or ReiserFS) are now being used by
@@ -85,7 +86,7 @@ Let's make this very clear. I want you to assume that this is a nasty program
 that will wipe out parts of your files that you didn't want it to wipe. So whatever
 happens after you launch
 .B wipe
-is your entire responsiblity.  In particular, no one guarantees that
+is your entire responsibility.  In particular, no one guarantees that
 .B wipe
 will conform to the specifications given in this manual page.
 
@@ -160,7 +161,7 @@ random data. See option
 
 .TP 0.5i
 .B -Q <number-of-passes>
-Sets the number of passes for quick wiping. Default is 4.
+Sets the number of passes for quick wiping. Default is 4. This option requires -q.
 
 .TP 0.5i
 .B -a (abort on error)
@@ -203,7 +204,6 @@ environment variables, the current date and
 time, its process id. etc. (the random device
 argument will not be used). This is of course
 the least secure setting.
-.SP
 
 .TP 0.5i
 .B -M (select pseudo-random number generator algorythm)
@@ -234,7 +234,6 @@ random(); the compile-time option WEAK_RC6 allows you to use a 4-round version
 of RC6, which is faster. In order to be able to use RC6, wipe must be compiled
 with ENABLE_RC6 defined; see the Makefile for warnings about patent issues.
 
-.SP
 In all cases the PRNG is seeded with the data gathered from the random device
 (see -R and -S options).
 
@@ -367,7 +366,7 @@ excepting /var/log. It will not attempt to chmod() things. It will however be
 verbose (option -i). It won't ask you to type ``yes'' because of the -f option.
 
 .TP 0.5i
-.B wipe -Kq -l 1440k /dev/fd0
+.B wipe -kq -l 1440K /dev/fd0
 Due to various idiosyncracies of the operating system, it's not always easy
 to obtain the number of bytes a given device might contain (in fact, that
 quantity can be variable). This is why you sometimes need to tell
