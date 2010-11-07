@@ -1,6 +1,6 @@
-# Makefile for wipe, version 0.21, by Berke Durak
-# $Id: Makefile,v 1.2 2004/06/12 17:49:47 berke Exp $
-# echo berke1ouvaton2org|tr 12 @.
+# Makefile for wipe by Berke Durak
+# 
+# echo berke1lambda-diode2com|tr 12 @.
 #
 # define HAVE_OSYNC if an O_SYNC bit can be specified for the open () call
 # (see open(2))
@@ -153,8 +153,15 @@ generic	:
 wipe	:	$(OBJECTS)
 		$(CC) $(CCO) $(OBJECTS) -o wipe
 
-wipe.o	:	wipe.c random.h misc.h
+wipe.o	:	wipe.c random.h misc.h version.h
 		$(CC) $(CCO) $(CCOC) wipe.c -o wipe.o
+
+version.h: always
+		if which git >/dev/null 2>&1 ; then \
+			git rev-list --max-count=1 HEAD | sed -e 's/^/#define WIPE_GIT "/' -e 's/$$/"/' >version.h ; \
+	  else \
+			echo '#define WIPE_GIT "(unknown, compiled without git)"' >version.h ; \
+	  fi
 
 random.o	:	random.c misc.h md5.h
 		$(CC) $(CCO) $(CCOC) random.c -o random.o
@@ -164,7 +171,6 @@ rc6.o	:	rc6.c rc6.h
 
 arcfour.o	:	arcfour.c arcfour.h
 		$(CC) $(CCO) $(CCOC) arcfour.c -o arcfour.o
-
 
 md5.o	:	md5.c md5.h
 		$(CC) $(CCO) $(CCOC) md5.c -o md5.o
@@ -176,7 +182,9 @@ wipe.tr-asc.1	:	wipe.tr.1
 			./trtur <wipe.tr.1 >wipe.tr-asc.1
 
 clean	:	
-		rm -f wipe $(OBJECTS) wipe.tr-asc.1 *~ DEADJOE core
+		rm -f wipe $(OBJECTS) wipe.tr-asc.1 version.h
 
 install:
 	install -m755 -o root -g root wipe $(DESTDIR)/usr/bin
+
+.PHONY: always clean install

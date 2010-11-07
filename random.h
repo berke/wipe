@@ -1,7 +1,6 @@
 /* wipe
- * $Id: random.h,v 1.1.1.1 2002/11/25 23:59:49 berke Exp $
+ * 
  * by Berke Durak
- * Author may be contacted at 'echo berke1ouvaton2org|tr 12 @.'
  *
  * Header file for cryptographically-strong (as well as weak)
  * random data generation routines

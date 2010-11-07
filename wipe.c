@@ -1,9 +1,20 @@
 /* wipe
- * $Id: wipe.c,v 1.2 2004/06/12 17:49:47 berke Exp $
- * by Berke Durak
- * Author may be contacted at 'echo berke1ouvaton2org|tr 12 @.'
  *
- * URL for wipe: http://abaababa.ouvaton.org/wipe/
+ * by Berke Durak
+ *
+ * With many thanks to the following contributors:
+ *     Jason Axley
+ *     Alexey Marinichev
+ *     Chris L. Mason
+ *     Karako Miklos
+ *     Jim Paris
+ *     Thomas Schoepf
+ *
+ * Author may be contacted at 'echo berke1lambda-diode|com 12 @.'
+ *
+ * URL for wipe:   http://lambda-diode.com/software/wipe
+ * Git repository: http://github.com/berke/wipe
+ *                 git clone https://github.com/berke/wipe.git
  *
  * Securely erase files from magnetic media
  * Based on data from article "Secure Deletion of Data from Magnetic
@@ -13,8 +24,8 @@
 
 /*** defines */
 
-#define WIPE_VERSION "0.21"
-#define WIPE_DATE "2006-09-20"
+#define WIPE_VERSION "0.22"
+#define WIPE_DATE "2010-11-07"
 #define WIPE_CVS "$Id: wipe.c,v 1.2 2004/06/12 17:49:47 berke Exp $"
 
 /* exit codes */
@@ -77,9 +88,9 @@
 #include <sys/types.h>
 #include <sys/ioctl.h>
 
-
 #include "random.h"
 #include "misc.h"
+#include "version.h"
 
 /* includes ***/
 
@@ -141,6 +152,7 @@ int o_recurse = 0;
 int o_dereference_symlinks = 0;
 int o_quick = 0;
 int o_quick_passes = QUICKPASSES;
+int o_quick_passes_set = 0;
 int o_verbose = 0;
 int o_silent = 0;
 char *o_devrandom = DEVRANDOM;
@@ -158,6 +170,7 @@ int o_lg2_buffer_size = BUFLG2;
 int o_buffer_size = 1<<BUFLG2;
 int o_wipe_length_set = 0;
 int o_wipe_exact_size = 0;
+int o_skip_passes = 0;
 
 /* End of Options ***/
 
@@ -906,9 +919,13 @@ static int dothejob (char *fn)
         debugf ("buffers_to_wipe = %d, o_buffer_size = %d, wi.n_passes = %d",
                 buffers_to_wipe, o_buffer_size, wi.n_passes);
 
+	if (o_skip_passes > 0) {
+	    printf ("\rSkip first %d pass(es)\n", o_skip_passes);
+	}
+
         /* do the passes */
         eta_begin();
-        for (i = 0; i<wi.n_passes; i++) {
+        for (i = o_skip_passes; i<wi.n_passes; i++) {
             ssize_t wr;
 
             if (!o_silent) {
@@ -1199,13 +1216,12 @@ void banner ()
 {
     fprintf (stderr, "This is wipe version " WIPE_VERSION ".\n"
             "\n"
-            "Author: Berke Durak.\n"
-            "Author's e-mail address: echo berke1ouvaton2org|tr 12 @.\n"
-            "Web site: http://abaababa.ouvaton.org/wipe/\n"
-            "\n"
-            "Release date: " WIPE_DATE "\n"
-            "Compiled: " __DATE__ "\n"
-            "CVS stuff: " WIPE_CVS "\n"
+            "Author:                  Berke Durak.\n"
+            "Author's e-mail address: echo berke1lambda-diode2com|tr 12 @.\n"
+            "Web site:                http://lambda-diode.com/software/wipe/\n"
+            "Release date:            " WIPE_DATE "\n"
+            "Compiled:                " __DATE__ "\n"
+            "Git version:             " WIPE_GIT "\n"
             "\n"
             "Based on data from \"Secure Deletion of Data from Magnetic and Solid-State\n"
             "Memory\" by Peter Gutmann <pgut001@cs.auckland.ac.nz>.\n");
@@ -1213,7 +1229,7 @@ void banner ()
 
 /* banner ***/
 
-#define OPTSTR "DfhvrqspciR:S:M:kFZl:o:b:Q:T:P:e"
+#define OPTSTR "X:DfhvrqspciR:S:M:kFZl:o:b:Q:T:P:e"
 
 /*** reject and usage */
 
@@ -1272,7 +1288,8 @@ void usage (void)
         "\t\t-T <tries> Set maximum number of tries for free\n"
         "\t\t\tfilename search; default is 10\n"
         "\t\t-v Show version information\n"
-        "\t\t-Z Do not attempt to wipe file size\n",
+        "\t\t-Z Do not attempt to wipe file size\n"
+        "\t\t-X <number> Skip this number of passes (useful for continuing a wiping operation)\n",
     progname
         );
 
@@ -1351,6 +1368,11 @@ int main (int argc, char **argv)
         if (c<0) break;
 
         switch (c) {
+	    case 'X': o_skip_passes = atoi(optarg);
+	        if (o_skip_passes <= 0) {
+                    reject ("number of skipped passes must be strictly positive");
+                }
+                break;
             case 'c': o_dochmod = 1; break;
             case 'D': o_dereference_symlinks = 1; break;
             case 'e': o_wipe_exact_size = 1; break;
@@ -1395,8 +1417,7 @@ int main (int argc, char **argv)
                                   }
                                   break;
             case 'Q':   o_quick_passes = atoi (optarg);
-                        if (o_quick_passes <= 0)
-                            reject ("number of quick passes must be strictly positive");
+                        o_quick_passes_set = 1;
                         break;
             case 'S':
                         if (optarg[1]) 
@@ -1437,6 +1458,10 @@ int main (int argc, char **argv)
                         usage ();
                         /* not reached */
         }
+    }
+
+    if (o_quick_passes_set && !o_quick) {
+        reject ("option -Q useless without -q");
     }
 
     if (optind >= argc) reject ("wrong number of arguments");
