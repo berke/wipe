@@ -281,6 +281,9 @@ struct passinfo_s {
     { 0, 0, 0,		},	/* 2  random */
     { 0, 0, 0,		},	/* 3  random */
     { 0, 0, 0, 		},	/* 4  random */
+
+#define FIRST_DETERMINISTIC_PASS 4
+
     { 1, 1, "\x55", 	},	/* 5  RLL MFM */
     { 1, 1, "\xaa", 	},	/* 6  RLL MFM */
     { 1, 3, "\x92\x49\x24", },	/* 7  RLL MFM */
@@ -308,11 +311,16 @@ struct passinfo_s {
     { 1, 3, "\x6d\xb6\xdb",	},	/* 29 RLL */
     { 1, 3, "\xb6\xdb\x6d",	},	/* 30 RLL */
     { 1, 3, "\xdb\x6d\xb6",	},	/* 31 RLL */
+
+#define LAST_DETERMINISTIC_PASS 30
+
     { 0, 0, 0,		},	/* 32 random */
     { 0, 0, 0,		},	/* 33 random */
     { 0, 0, 0,		},	/* 34 random */
     { 0, 0, 0, 		},	/* 35 random */
 };
+
+#define NUM_DETERMINISTIC_PASSES (LAST_DETERMINISTIC_PASS - FIRST_DETERMINISTIC_PASS + 1)
 
 #define MAX_PASSES (sizeof(passinfo)/(sizeof(*passinfo)))
 #define BUFT_RANDOM (1<<0)
@@ -725,13 +733,14 @@ static int dothejob (char *fn)
     }
 
     /* to do a cryptographically strong random permutation on the 
-     * order of the passes, we need lg_2(MAX_PASSES!) bits of entropy:
-     * for MAX_PASSES=35, this means about 132 bits.
+     * order of the deterministic passes, we need
+     *   lg_2(NUM_DETERMINISTIC_PASSES!) bits of entropy:
+     * this means about 128 bits.
      *
      * rand_seed () should give 31 bits of entropy per call
-     * we need a maximum of lg_2(MAX_PASSES) bits of entropy per random
+     * we need a maximum of lg_2(NUM_DETERMNISTIC_PASSES) bits of entropy per random
      * value. therefore we should call rand_seed () at least for
-     * every 31/lg_2(MAX_PASSES) ~= 6 random values.
+     * every 31/lg_2(NUM_DETERMNISTIC_PASSES) ~= 6 random values.
      *
      * on the other way, as we'll constantly force disk access,
      * /dev/urandom should have no difficulty providing us good random
@@ -741,21 +750,20 @@ static int dothejob (char *fn)
     if (!o_quick) {
         for (i = 0; i<MAX_PASSES; p[i]=i, i++);
 
-        for (i = 0; i<MAX_PASSES-2; i++) {
+        for (i = 0; i<NUM_DETERMINISTIC_PASSES-2; i++) {
             int a, b;
 
-            /* a \in { 0, 1, ... MAX_PASSES-i-1 } */
+            /* a \in { 0, 1, ... NUM_DETERMINISTIC_PASSES-i-1 } */
 
-            /* since MAX_PASSES-i is not necessarily a divisor of
-             * 2^32, we won't get uniform distribution
-             * with this. however, since MAX_PASSES is very
-             * small compared to RAND_MAX, ti
+            /* since NUM_DETERMINISTIC_PASSES-i is not necessarily a divisor of
+             * 2^32, we won't get uniform distribution with this. however,
+             * since MAX_PASSES is very small compared to RAND_MAX, ti
              */
 
-            a = rand_Get32 () % (MAX_PASSES-i);
-            b = p[i+a];
-            p[i+a] = p[i];
-            p[i] = b;
+            a = rand_Get32 () % (NUM_DETERMINISTIC_PASSES-i);
+            b = p[FIRST_DETERMINISTIC_PASS+i+a];
+            p[FIRST_DETERMINISTIC_PASS+i+a] = p[FIRST_DETERMINISTIC_PASS+i];
+            p[FIRST_DETERMINISTIC_PASS+i] = b;
         }
     }
 
@@ -918,10 +926,6 @@ static int dothejob (char *fn)
 
         debugf ("buffers_to_wipe = %d, o_buffer_size = %d, wi.n_passes = %d",
                 buffers_to_wipe, o_buffer_size, wi.n_passes);
-
-	if (o_skip_passes > 0) {
-	    printf ("\rSkip first %d pass(es)\n", o_skip_passes);
-	}
 
         /* do the passes */
         eta_begin();
@@ -1368,11 +1372,12 @@ int main (int argc, char **argv)
         if (c<0) break;
 
         switch (c) {
-	    case 'X': o_skip_passes = atoi(optarg);
-	        if (o_skip_passes <= 0) {
-                    reject ("number of skipped passes must be strictly positive");
-                }
-                break;
+            case 'X':
+                      o_skip_passes = atoi(optarg);
+                      if (o_skip_passes <= 0) {
+                          reject ("number of skipped passes must be strictly positive");
+                      }
+                      break;
             case 'c': o_dochmod = 1; break;
             case 'D': o_dereference_symlinks = 1; break;
             case 'e': o_wipe_exact_size = 1; break;
@@ -1510,6 +1515,11 @@ int main (int argc, char **argv)
             exit (EXIT_FAILURE);
         }
     } 
+
+    if (o_skip_passes) {
+        fprintf (stderr, "Will skipping %d passes\n", o_skip_passes);
+        fflush (stderr);
+    }
 
     if (!o_force) {	
         char buf2[80];
