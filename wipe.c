@@ -128,6 +128,73 @@
 
 /* more defines ***/
 
+/*** passinfo table */
+
+/* P.Gutmann, in his article, was recommening to make
+ * the DETERMINISTIC passes (i.e. those that don't write random data)
+ * in random order, and to make 4 random passes before and after these. 
+ *
+ * Here, the deterministic and the 8 random passes are made in random
+ * order, unless, of course, the "quick" mode is selected.
+ */
+
+struct passinfo_s {
+    int type;
+    int len;
+    char *pat;
+} passinfo[] = {
+    { 0, 0, 0,              },	/* 1  random */
+    { 0, 0, 0,              },	/* 2  random */
+    { 0, 0, 0,              },	/* 3  random */
+    { 0, 0, 0,              },	/* 4  random */
+
+#define FIRST_DETERMINISTIC_PASS 4
+
+    { 1, 1, "\x55", 	    },	/* 5  RLL MFM */
+    { 1, 1, "\xaa", 	    },	/* 6  RLL MFM */
+    { 1, 3, "\x92\x49\x24", },	/* 7  RLL MFM */
+    { 1, 3, "\x49\x24\x92", },	/* 8  RLL MFM */
+    { 1, 3, "\x24\x92\x49", },	/* 9  RLL MFM */
+    { 1, 1, "\x00",         },	/* 10 RLL */
+    { 1, 1, "\x11",         },	/* 11 RLL */
+    { 1, 1, "\x22",         },	/* 12 RLL */
+    { 1, 1, "\x33",         },	/* 13 RLL */
+    { 1, 1, "\x44",         },	/* 14 RLL */
+    { 1, 1, "\x55",         },	/* 15 RLL */
+    { 1, 1, "\x66",         },	/* 16 RLL */
+    { 1, 1, "\x77",         },	/* 17 RLL */
+    { 1, 1, "\x88",         },	/* 18 RLL */
+    { 1, 1, "\x99",         },	/* 19 RLL */
+    { 1, 1, "\xaa",         },	/* 20 RLL */
+    { 1, 1, "\xbb",         },	/* 21 RLL */
+    { 1, 1, "\xcc",         },	/* 22 RLL */
+    { 1, 1, "\xdd",         },	/* 23 RLL */
+    { 1, 1, "\xee",         },	/* 24 RLL */
+    { 1, 1, "\xff",         },	/* 25 RLL */
+    { 1, 3, "\x92\x49\x24",	},	/* 26 RLL MFM */
+    { 1, 3, "\x49\x24\x92",	},	/* 27 RLL MFM */
+    { 1, 3, "\x24\x92\x49",	},	/* 28 RLL MFM */
+    { 1, 3, "\x6d\xb6\xdb",	},	/* 29 RLL */
+    { 1, 3, "\xb6\xdb\x6d",	},	/* 30 RLL */
+    { 1, 3, "\xdb\x6d\xb6",	},	/* 31 RLL */
+
+#define LAST_DETERMINISTIC_PASS 30
+
+    { 0, 0, 0,              },	/* 32 random */
+    { 0, 0, 0,              },	/* 33 random */
+    { 0, 0, 0,              },	/* 34 random */
+    { 0, 0, 0,              },	/* 35 random */
+};
+
+#define NUM_DETERMINISTIC_PASSES (LAST_DETERMINISTIC_PASS - FIRST_DETERMINISTIC_PASS + 1)
+
+#define MAX_PASSES (sizeof(passinfo)/(sizeof(*passinfo)))
+#define BUFT_RANDOM (1<<0)
+#define BUFT_USED (1<<1)
+
+/* Passinfo table ***/
+
+
 /*** errno, num_* statistics, middle_of_line */
 
 extern int errno;
@@ -171,6 +238,7 @@ int o_buffer_size = 1<<BUFLG2;
 int o_wipe_length_set = 0;
 int o_wipe_exact_size = 0;
 int o_skip_passes = 0;
+int o_pass_order[MAX_PASSES] = { -1 };
 
 /* End of Options ***/
 
@@ -261,72 +329,6 @@ void fill_pattern (char *b, int n, char *p, int l)
 }
 
 /* fill_pattern ***/
-
-/*** passinfo table */
-
-/* P.Gutmann, in his article, was recommening to make
- * the DETERMINISTIC passes (i.e. those that don't write random data)
- * in random order, and to make 4 random passes before and after these. 
- *
- * Here, the deterministic and the 8 random passes are made in random
- * order, unless, of course, the "quick" mode is selected.
- */
-
-struct passinfo_s {
-    int type;
-    int len;
-    char *pat;
-} passinfo[] = {
-    { 0, 0, 0,		},	/* 1  random */
-    { 0, 0, 0,		},	/* 2  random */
-    { 0, 0, 0,		},	/* 3  random */
-    { 0, 0, 0, 		},	/* 4  random */
-
-#define FIRST_DETERMINISTIC_PASS 4
-
-    { 1, 1, "\x55", 	},	/* 5  RLL MFM */
-    { 1, 1, "\xaa", 	},	/* 6  RLL MFM */
-    { 1, 3, "\x92\x49\x24", },	/* 7  RLL MFM */
-    { 1, 3, "\x49\x24\x92", },	/* 8  RLL MFM */
-    { 1, 3, "\x24\x92\x49", },	/* 9  RLL MFM */
-    { 1, 1, "\x00", 	},	/* 10 RLL */
-    { 1, 1, "\x11", 	},	/* 11 RLL */
-    { 1, 1, "\x22", 	},	/* 12 RLL */
-    { 1, 1, "\x33", 	},	/* 13 RLL */
-    { 1, 1, "\x44", 	},	/* 14 RLL */
-    { 1, 1, "\x55", 	},	/* 15 RLL */
-    { 1, 1, "\x66", 	},	/* 16 RLL */
-    { 1, 1, "\x77", 	},	/* 17 RLL */
-    { 1, 1, "\x88", 	},	/* 18 RLL */
-    { 1, 1, "\x99", 	},	/* 19 RLL */
-    { 1, 1, "\xaa", 	},	/* 20 RLL */
-    { 1, 1, "\xbb", 	},	/* 21 RLL */
-    { 1, 1, "\xcc", 	},	/* 22 RLL */
-    { 1, 1, "\xdd", 	},	/* 23 RLL */
-    { 1, 1, "\xee", 	},	/* 24 RLL */
-    { 1, 1, "\xff", 	},	/* 25 RLL */
-    { 1, 3, "\x92\x49\x24",	},	/* 26 RLL MFM */
-    { 1, 3, "\x49\x24\x92",	},	/* 27 RLL MFM */
-    { 1, 3, "\x24\x92\x49",	},	/* 28 RLL MFM */
-    { 1, 3, "\x6d\xb6\xdb",	},	/* 29 RLL */
-    { 1, 3, "\xb6\xdb\x6d",	},	/* 30 RLL */
-    { 1, 3, "\xdb\x6d\xb6",	},	/* 31 RLL */
-
-#define LAST_DETERMINISTIC_PASS 30
-
-    { 0, 0, 0,		},	/* 32 random */
-    { 0, 0, 0,		},	/* 33 random */
-    { 0, 0, 0,		},	/* 34 random */
-    { 0, 0, 0, 		},	/* 35 random */
-};
-
-#define NUM_DETERMINISTIC_PASSES (LAST_DETERMINISTIC_PASS - FIRST_DETERMINISTIC_PASS + 1)
-
-#define MAX_PASSES (sizeof(passinfo)/(sizeof(*passinfo)))
-#define BUFT_RANDOM (1<<0)
-#define BUFT_USED (1<<1)
-
-/* Passinfo table ***/
 
 /*** pattern buffers and wipe info declarations */
 
@@ -747,7 +749,7 @@ static int dothejob (char *fn)
      * values.
      */
 
-    if (!o_quick) {
+    if (!o_quick && o_pass_order[0] >= 0) {
         for (i = 0; i<MAX_PASSES; p[i]=i, i++);
 
         for (i = 0; i<NUM_DETERMINISTIC_PASSES-2; i++) {
@@ -764,6 +766,12 @@ static int dothejob (char *fn)
             b = p[FIRST_DETERMINISTIC_PASS+i+a];
             p[FIRST_DETERMINISTIC_PASS+i+a] = p[FIRST_DETERMINISTIC_PASS+i];
             p[FIRST_DETERMINISTIC_PASS+i] = b;
+        }
+    }
+
+    if (o_pass_order[0] >= 0) {
+        for (i = 0; i<MAX_PASSES; i++) {
+            p[i] = o_pass_order[i];
         }
     }
 
@@ -927,6 +935,15 @@ static int dothejob (char *fn)
         debugf ("buffers_to_wipe = %d, o_buffer_size = %d, wi.n_passes = %d",
                 buffers_to_wipe, o_buffer_size, wi.n_passes);
 
+        fprintf (stderr, "If you want to continue an aborted wiping, use these options:\n");
+        fprintf (stderr, "-X <number> -x ");
+        for (i = 0; i<wi.n_passes; i++) {
+        	if (i > 0) fprintf (stderr, ",");
+        	fprintf (stderr, "%d", p[i]);
+        }
+        fprintf(stderr, "\n");
+        fflush (stderr);
+
         /* do the passes */
         eta_begin();
         for (i = o_skip_passes; i<wi.n_passes; i++) {
@@ -960,7 +977,7 @@ static int dothejob (char *fn)
                                 "[%8ld / %8ld]", (long) j, (long)buffers_to_wipe);
                         backspace(buf1_bs, buf1);
                         eta_progress(buf2, sizeof(buf2),
-                            ((double)i + ((double)j / buffers_to_wipe)) / wi.n_passes);
+                            ((double) (i - o_skip_passes) + ((double)j / buffers_to_wipe)) / (wi.n_passes - o_skip_passes));
                         if (buf2[0])
                             pad(buf2, sizeof(buf2));
                         backspace(buf2_bs, buf2);
@@ -1233,7 +1250,7 @@ void banner ()
 
 /* banner ***/
 
-#define OPTSTR "X:DfhvrqspciR:S:M:kFZl:o:b:Q:T:P:e"
+#define OPTSTR "x:X:DfhvrqspciR:S:M:kFZl:o:b:Q:T:P:e"
 
 /*** reject and usage */
 
@@ -1267,34 +1284,35 @@ void usage (void)
             "\t\t-M (l|r) Set PRNG algorithm for filling blocks (and ordering passes)\n"
             "\t\t\tl Use libc's "
 #ifdef HAVE_RANDOM
-        "random()"
+                "random()"
 #else
-        "rand()"
+                "rand()"
 #endif
-        " library call\n"
+                " library call\n"
 #ifdef RC6_ENABLED
-        "\t\t\tr Use RC6 encryption algorithm\n"
+            "\t\t\tr Use RC6 encryption algorithm\n"
 #endif
-        "\t\t\ta Use arcfour encryption algorithm\n"
-        "\t\t-o <offset> Set wipe offset to <offset>, where <offset> has the\n"
-        "\t\t\tsame format as <length>\n"
-        "\t\t-P <passes> Set number of passes for filename wiping.\n"
-        "\t\t\tDefault is 1.\n"
-        "\t\t-Q <number> set number of passes for quick wipe\n"
-        "\t\t-q Quick wipe, less secure, 4 random passes by default\n"
-        "\t\t-r Recurse into directories -- symlinks will not be followed\n"
-        "\t\t-R Set random device (or random seed command with -S c)\n"
-        "\t\t-S (r|c|p) Random seed method\n"
-        "\t\t\t r Read from random device (strong)\n"
-        "\t\t\t c Read from output of random seed command\n"
-        "\t\t\t p Use pid(), clock() etc. (weakest)\n"
-        "\t\t-s Silent mode -- suppresses all output\n"
-        "\t\t-T <tries> Set maximum number of tries for free\n"
-        "\t\t\tfilename search; default is 10\n"
-        "\t\t-v Show version information\n"
-        "\t\t-Z Do not attempt to wipe file size\n"
-        "\t\t-X <number> Skip this number of passes (useful for continuing a wiping operation)\n",
-    progname
+            "\t\t\ta Use arcfour encryption algorithm\n"
+            "\t\t-o <offset> Set wipe offset to <offset>, where <offset> has the\n"
+            "\t\t\tsame format as <length>\n"
+            "\t\t-P <passes> Set number of passes for filename wiping.\n"
+            "\t\t\tDefault is 1.\n"
+            "\t\t-Q <number> set number of passes for quick wipe\n"
+            "\t\t-q Quick wipe, less secure, 4 random passes by default\n"
+            "\t\t-r Recurse into directories -- symlinks will not be followed\n"
+            "\t\t-R Set random device (or random seed command with -S c)\n"
+            "\t\t-S (r|c|p) Random seed method\n"
+            "\t\t\t r Read from random device (strong)\n"
+            "\t\t\t c Read from output of random seed command\n"
+            "\t\t\t p Use pid(), clock() etc. (weakest)\n"
+            "\t\t-s Silent mode -- suppresses all output\n"
+            "\t\t-T <tries> Set maximum number of tries for free\n"
+            "\t\t\tfilename search; default is 10\n"
+            "\t\t-v Show version information\n"
+            "\t\t-Z Do not attempt to wipe file size\n"
+            "\t\t-X <number> Skip this number of passes (useful for continuing a wiping operation)\n"
+            "\t\t-x <pass1,pass2,...> Define pass order\n",
+            progname
         );
 
     exit (WIPE_EXIT_COMPLETE_SUCCESS);
@@ -1378,6 +1396,43 @@ int main (int argc, char **argv)
                           reject ("number of skipped passes must be strictly positive");
                       }
                       break;
+            case 'x':
+                    {
+                        int p_index = 0;
+                        char *pch;
+                        int current_int;
+
+                        debugf ("splitting string \"%s\" into tokens:\n", optarg);
+                        strtok (optarg, ",");
+                        while (pch != NULL) {
+                            if (p_index >= MAX_PASSES) {
+                                fprintf (stderr, "Too many arguments: %s\n", pch);
+                                exit (WIPE_EXIT_MANIPULATION_ERROR);
+                            }
+
+                            current_int = atoi(pch);
+                            if (current_int < 0 || current_int > MAX_PASSES) {
+                                fprintf (stderr, "Invalid pass number: %s\n", pch);
+                                exit (WIPE_EXIT_MANIPULATION_ERROR);
+                            }
+
+                            o_pass_order[p_index] = current_int;
+                            debugf ("p[%d] = %d, (pch: %s)\n", p_index, current_int, pch);
+                            pch = strtok(NULL, ",");
+                            p_index ++;
+                        }
+
+                        debugf ("result: ");
+                        for (i = 0; i < MAX_PASSES; i++) {
+                            debugf ("%d ", o_pass_order[i]);
+                        }
+                        debugf ("\n");
+
+                        if (p_index < MAX_PASSES) {
+                            reject("Not enough arguments for -x\n");
+                        }
+                    }
+            		break;
             case 'c': o_dochmod = 1; break;
             case 'D': o_dereference_symlinks = 1; break;
             case 'e': o_wipe_exact_size = 1; break;
