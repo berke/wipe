@@ -65,6 +65,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdarg.h>
 #include <unistd.h>
 
 #ifdef FIND_DEVICE_SIZE_BY_BLKGETSIZE
@@ -258,6 +259,9 @@ int do_remove (char *fn)
 
 /*** signal_handler */
 
+void (*abort_handler)(void *) = NULL;
+void *abort_handler_arg = NULL;
+
 #ifdef SIGHANDLER_RETURNS_INT
 int signal_handler (int i)
 #else
@@ -268,9 +272,13 @@ void signal_handler (int i)
     fflush (stderr);
     if (middle_of_line) { fputc ('\n', stderr); middle_of_line = 0; }
     fprintf (stderr, "*** Interrupted by signal %d\n", i);
+
+    if(abort_handler) abort_handler(abort_handler_arg);
+
     /* exit () does fflush () */
     exit (i == SIGINT?WIPE_EXIT_USER_ABORT:WIPE_EXIT_FAILURE);
 }
+
 
 /* signal_handler ***/
 
@@ -345,9 +353,11 @@ struct wipe_info {
     int random_length;
     int n_passes;
     int n_buffers;
+    int current_pass;
     struct wipe_pattern_buffer random_buffers[RANDOM_BUFFERS];
     struct wipe_pattern_buffer buffers[MAX_BUFFERS];
     struct wipe_pattern_buffer *passes[MAX_PASSES];
+    int p[MAX_PASSES];
 };
 
 /* pattern buffers and wipe info declarations ***/
@@ -682,6 +692,21 @@ backspace(char *dst, const char *src)
     *dst = '\0';
 }
 
+void wipe_continuation_message(void *arg)
+{
+    int i;
+    struct wipe_info *wi = arg;
+
+    fprintf (stderr, "*** If you want to resume wiping while preserving the pass order, use these options:\n");
+    fprintf (stderr, "***   -X %d -x ", wi->current_pass);
+    for (i = 0; i<wi->n_passes; i++) {
+        if (i > 0) fprintf (stderr, ",");
+        fprintf (stderr, "%d", wi->p[i]);
+    }
+    fprintf(stderr, "\n");
+    fflush (stderr);
+}
+
 /*** dothejob -- nonrecursive wiping of a single file or device */
 
 /* determine parameters of region to be wiped
@@ -706,7 +731,6 @@ backspace(char *dst, const char *src)
 static int dothejob (char *fn)
 {
     int fd;
-    int p[MAX_PASSES];
 
     int bpi = 0;	/* block progress indicator enabled ? */
     int i;
@@ -715,6 +739,8 @@ static int dothejob (char *fn)
     static struct wipe_info wi;
     static int wipe_info_initialized = 0;
     struct wipe_pattern_buffer *wpb = 0;
+
+    int *p = wi.p;
 
     struct stat st;
     off_t buffers_to_wipe; /* number of buffers to write on device */
@@ -731,6 +757,7 @@ static int dothejob (char *fn)
     if (!fn) {
         if (wipe_info_initialized)
             shut_wipe_info (&wi);
+        abort_handler = NULL;
         return 0;
     }
 
@@ -749,7 +776,7 @@ static int dothejob (char *fn)
      * values.
      */
 
-    if (!o_quick && o_pass_order[0] >= 0) {
+    if (!o_quick && o_pass_order[0] < 0) {
         for (i = 0; i<MAX_PASSES; p[i]=i, i++);
 
         for (i = 0; i<NUM_DETERMINISTIC_PASSES-2; i++) {
@@ -906,6 +933,8 @@ static int dothejob (char *fn)
         if (!wipe_info_initialized) {
             init_wipe_info (&wi);
             wipe_info_initialized = 1;
+            abort_handler = wipe_continuation_message;
+            abort_handler_arg = &wi;
         }
 
         /* if the possibly existing leftover random buffers
@@ -935,23 +964,16 @@ static int dothejob (char *fn)
         debugf ("buffers_to_wipe = %d, o_buffer_size = %d, wi.n_passes = %d",
                 buffers_to_wipe, o_buffer_size, wi.n_passes);
 
-        fprintf (stderr, "If you want to continue an aborted wiping, use these options:\n");
-        fprintf (stderr, "-X <number> -x ");
-        for (i = 0; i<wi.n_passes; i++) {
-        	if (i > 0) fprintf (stderr, ",");
-        	fprintf (stderr, "%d", p[i]);
-        }
-        fprintf(stderr, "\n");
-        fflush (stderr);
-
         /* do the passes */
         eta_begin();
         for (i = o_skip_passes; i<wi.n_passes; i++) {
             ssize_t wr;
 
+            wi.current_pass = i;
+
             if (!o_silent) {
                 if (o_quick) 
-                    fprintf (stderr, "\rWiping %.32s, pass %d in quick mode   ", fn, i);
+                    fprintf (stderr, "\rWipoing %.32s, pass %d in quick mode   ", fn, i);
                 else
                     fprintf (stderr, "\rWiping %.32s, pass %-2d (%-2d)   ", fn, i, p[i]);
                 middle_of_line = 1;
@@ -1052,6 +1074,10 @@ static int dothejob (char *fn)
                 return -1;
             }
         }
+
+        /* skipping parameters are only meant for first file */
+        o_skip_passes = 0;
+        o_pass_order[0] = 1;
 
         /* try to wipe out file size by truncating at various sizes... */
 
@@ -1213,7 +1239,9 @@ int recursive (char *fn)
         if (!r && !o_no_remove && rmdir (fn)) { fnerror ("rmdir"); return -1; }	
     } else {
         if (S_ISREG(st.st_mode)) {
-            return dothejob (fn);
+            int rc = dothejob (fn);
+            abort_handler = NULL;
+            return rc;
         } else if (S_ISLNK(st.st_mode)) { num_symlinks ++; }
         else { 
             if (o_verbose) {
@@ -1254,9 +1282,15 @@ void banner ()
 
 /*** reject and usage */
 
-void reject (char *msg)
+void reject (char *msg, ...)
 {
-    fprintf (stderr, "Invocation error (-h for help): %s\n", msg);
+    va_list va;
+
+    va_start(va, msg);
+    fprintf (stderr, "Invocation error (-h for help): ");
+    vfprintf(stderr, msg, va);
+    fprintf(stderr, "\n");
+    va_end(va);
     exit(WIPE_EXIT_MANIPULATION_ERROR);
 }
 
@@ -1392,8 +1426,8 @@ int main (int argc, char **argv)
         switch (c) {
             case 'X':
                       o_skip_passes = atoi(optarg);
-                      if (o_skip_passes <= 0) {
-                          reject ("number of skipped passes must be strictly positive");
+                      if (o_skip_passes <= 0 || o_skip_passes > MAX_PASSES) {
+                          reject ("number of skipped passes must be between 0 and %d which %d is not", MAX_PASSES, o_skip_passes);
                       }
                       break;
             case 'x':
@@ -1402,8 +1436,8 @@ int main (int argc, char **argv)
                         char *pch;
                         int current_int;
 
-                        debugf ("splitting string \"%s\" into tokens:\n", optarg);
-                        strtok (optarg, ",");
+                        debugf ("splitting string \"%s\" into tokens:", optarg);
+                        pch = strtok (optarg, ",");
                         while (pch != NULL) {
                             if (p_index >= MAX_PASSES) {
                                 fprintf (stderr, "Too many arguments: %s\n", pch);
@@ -1417,19 +1451,18 @@ int main (int argc, char **argv)
                             }
 
                             o_pass_order[p_index] = current_int;
-                            debugf ("p[%d] = %d, (pch: %s)\n", p_index, current_int, pch);
+                            debugf ("  p[%d] = %d, (pch: %s)", p_index, current_int, pch);
                             pch = strtok(NULL, ",");
                             p_index ++;
                         }
 
                         debugf ("result: ");
-                        for (i = 0; i < MAX_PASSES; i++) {
+                        for (i = 0; i < p_index; i++) {
                             debugf ("%d ", o_pass_order[i]);
                         }
-                        debugf ("\n");
 
                         if (p_index < MAX_PASSES) {
-                            reject("Not enough arguments for -x\n");
+                            reject("not enough arguments for -x (got %d, need %d)\n", p_index, MAX_PASSES);
                         }
                     }
             		break;
@@ -1572,7 +1605,7 @@ int main (int argc, char **argv)
     } 
 
     if (o_skip_passes) {
-        fprintf (stderr, "Will skipping %d passes\n", o_skip_passes);
+        fprintf (stderr, "Will skip %d passes\n", o_skip_passes);
         fflush (stderr);
     }
 

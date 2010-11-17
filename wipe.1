@@ -282,6 +282,19 @@ this is only attempted on regular files so there is no use if you use
 for cleaning a block or special device.
 
 .TP 0.5i
+.B -X <number>
+Skip a given number of passes.  This is useful to continue wiping from a given point
+when you have been wiping, say, a large disk and had to interrupt the operation.  Used
+with -x.
+
+.TP 0.5i
+.B -x <pass1>,...,<pass35>
+Specify the pass order.  When
+.B wipe
+is interrupted, it will print the current randomly selected pass order permutation
+and the pass number as appropriate -x and -X arguments.
+
+.TP 0.5i
 .B -F
 Don't try to wipe file names. Normally,
 .B wipe
