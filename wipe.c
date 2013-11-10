@@ -1377,7 +1377,7 @@ void banner ()
             "Web site:                http://lambda-diode.com/software/wipe/\n"
             "Release date:            " WIPE_DATE "\n"
             "Compiled:                " __DATE__ "\n"
-            "Git version:             TEST\n"
+            "Git version:             " WIPE_GIT "\n"
             "\n"
             "Based on data from \"Secure Deletion of Data from Magnetic and Solid-State\n"
             "Memory\" by Peter Gutmann <pgut001@cs.auckland.ac.nz>.\n");
