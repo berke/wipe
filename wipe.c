@@ -535,7 +535,6 @@ ignorable_sync_errno (int errno_val)
 }
 
 
-#define HAVE_FDATASYNC 1
 static int
 dosync (int fd, char const *qname)
 {
