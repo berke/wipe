@@ -24,7 +24,7 @@
 
 /*** defines */
 
-#define WIPE_VERSION "0.22"
+#define WIPE_VERSION "0.23"
 #define WIPE_DATE "2010-11-07"
 #define WIPE_CVS "$Id: wipe.c,v 1.2 2004/06/12 17:49:47 berke Exp $"
 

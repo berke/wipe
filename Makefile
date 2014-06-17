@@ -67,6 +67,14 @@ CCO_AIX=$(CFLAGS)
 CCOC_AIX=-c
 
 # --------------------------------------------------------------------------
+# macos (gcc)
+#
+
+CC_MAC=gcc
+CCO_MAC=-Wall -pipe -fomit-frame-pointer -D_LARGEFILE_SOURCE -D_FILE_OFFSET_BITS=64
+CCOC_MAC=-c
+
+# --------------------------------------------------------------------------
 # Generic UNIX (gcc)
 #
 
@@ -124,6 +132,7 @@ all	:
 		echo "  solarisx86   -- for Solaris x86 (tested on 2.6)"; \
 		echo "  freebsd      -- for FreeBSD (tested on 2.2.6-STABLE)"; \
 		echo "  digitalalpha -- for Digital/Compaq UNIX Alpha"; \
+		echo "  macos        -- for macos (tested on macos 10.9.3)"; \
 		echo "  generic      -- for generic unix"
 
 linux	:	
@@ -147,7 +156,10 @@ solarisx86	:
 digitalalpha	:	
 		$(MAKE) $(TARGETS) "CC=$(CC_DIGITALALPHA)" "CCO=$(CCO_DIGITALALPHA)" "CCOC=$(CCOC_DIGITALALPHA)"
 
-generic	:	
+macos	:
+		$(MAKE) $(TARGETS) "CC=$(CC_MAC)" "CCO=$(CCO_MAC)" "CCOC=$(CCOC_MAC)"
+
+generic	:
 		$(MAKE) $(TARGETS) "CC=$(CC_GENERIC)" "CCO=$(CCO_GENERIC)" "CCOC=$(CCOC_GENERIC)"
 
 wipe	:	$(OBJECTS)
@@ -158,9 +170,9 @@ wipe.o	:	wipe.c random.h misc.h version.h
 
 version.h: always
 		if which git >/dev/null 2>&1 ; then \
-			git rev-list --max-count=1 HEAD | sed -e 's/^/#define WIPE_GIT "/' -e 's/$$/"/' >version.h ; \
+			git --version | sed -e 's/^/#define WIPE_GIT "/' -e 's/$$/"/' > version.h ; \
 	  else \
-			echo '#define WIPE_GIT "(unknown, compiled without git)"' >version.h ; \
+			echo '#define WIPE_GIT "(unknown, compiled without git)"' > version.h ; \
 	  fi
 
 random.o	:	random.c misc.h md5.h
