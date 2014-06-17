@@ -170,9 +170,9 @@ wipe.o	:	wipe.c random.h misc.h version.h
 
 version.h: always
 		if which git >/dev/null 2>&1 ; then \
-			git rev-list --max-count=1 HEAD | sed -e 's/^/#define WIPE_GIT "/' -e 's/$$/"/' >version.h ; \
+			git --version | sed -e 's/^/#define WIPE_GIT "/' -e 's/$$/"/' > version.h ; \
 	  else \
-			echo '#define WIPE_GIT "(unknown, compiled without git)"' >version.h ; \
+			echo '#define WIPE_GIT "(unknown, compiled without git)"' > version.h ; \
 	  fi
 
 random.o	:	random.c misc.h md5.h
