@@ -45,7 +45,7 @@ CC_LINUX=gcc
 CCO_LINUX=-Wall -DHAVE_DEV_URANDOM -DHAVE_OSYNC -DHAVE_STRCASECMP -DHAVE_RANDOM -DWEAK_RC6 -DSYNC_WAITS_FOR_SYNC -DFIND_DEVICE_SIZE_BY_BLKGETSIZE -DSIXTYFOUR -D__USE_LARGEFILE -D_FILE_OFFSET_BITS=64
 # default should be to turn off debugging and to turn on optimization.
 #CCO_LINUX+=-O9 -pipe -fomit-frame-pointer -finline-functions -funroll-loops -fstrength-reduce
-CCO_LINUX+=$(CFLAGS)
+CCO_LINUX+=$(CFLAGS) $(LDFLAGS) $(CPPFLAGS)
 #CCO_LINUX+=-DDEBUG -g
 CCOC_LINUX=-c
 
@@ -71,7 +71,7 @@ CCOC_AIX=-c
 #
 
 CC_GENERIC=gcc
-CCO_GENERIC=-Wall -O6 -pipe -fomit-frame-pointer -D_LARGEFILE_SOURCE -D_FILE_OFFSET_BITS=64
+CCO_GENERIC=-Wall -O6 -pipe -fomit-frame-pointer -D_LARGEFILE_SOURCE -D_FILE_OFFSET_BITS=64 $(CFLAGS) $(LDFLAGS) $(CPPFLAGS)
 CCOC_GENERIC=-c
 
 # Thanks to Chris L. Mason <cmason@unixzone.com> for these:
