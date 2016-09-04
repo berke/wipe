@@ -1723,7 +1723,7 @@ user_aborted:
             fprintf (stderr, "\rOperation finished.\n"
                     "%d file%s (of which %d special) in %d director%s wiped, "
                     "%d symlink%s removed and their targets wiped, "
-                    "%d error%s occured.\n",
+                    "%d error%s occurred.\n",
                     num_files+num_spec, (1==num_files+num_spec)?"":"s",
                     num_spec,
                     num_dirs, (1==num_dirs)?"y":"ies",
@@ -1733,7 +1733,7 @@ user_aborted:
             fprintf (stderr, "\rOperation finished.\n"
                     "%d file%s wiped and %d special file%s ignored in %d director%s, "
                     "%d symlink%s removed but not followed, "
-                    "%d error%s occured.\n",
+                    "%d error%s occurred.\n",
                     num_files,(1==num_files)?"":"s",
                     num_spec,(1==num_spec)?"":"s",
                     num_dirs, (1==num_dirs)?"y":"ies",
