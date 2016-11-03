@@ -24,9 +24,8 @@
 
 /*** defines */
 
-#define WIPE_VERSION "0.22"
-#define WIPE_DATE "2010-11-07"
-#define WIPE_CVS "$Id: wipe.c,v 1.2 2004/06/12 17:49:47 berke Exp $"
+#define WIPE_VERSION "0.23"
+#define WIPE_DATE "2016-11-03"
 
 /* exit codes */
 
@@ -1265,11 +1264,10 @@ void banner ()
 {
     fprintf (stderr, "This is wipe version " WIPE_VERSION ".\n"
             "\n"
-            "Author:                  Berke Durak.\n"
+            "Author:                  Oguz Berke Antoine Durak.\n"
             "Author's e-mail address: echo berke1lambda-diode2com|tr 12 @.\n"
             "Web site:                http://lambda-diode.com/software/wipe/\n"
             "Release date:            " WIPE_DATE "\n"
-            "Compiled:                " __DATE__ "\n"
             "Git version:             " WIPE_GIT "\n"
             "\n"
             "Based on data from \"Secure Deletion of Data from Magnetic and Solid-State\n"
@@ -1704,15 +1702,18 @@ user_aborted:
         if (o_recurse) r = recursive (argv[i]);
         else r = dothejob (argv[i]);
 
-
-        /* if (r < 0) num_errors ++; */
+        if (r < 0) num_errors ++; /* Why or when was this disabled? -- OBD */
     }
 
     /* free internal buffers */
     dothejob (0);
 
     /* final synchronisation */
-    if (!o_silent) fprintf (stderr, "Syncing..."); fflush (stderr);
+    if (!o_silent) {
+      fprintf (stderr, "Syncing...");
+      fflush (stderr);
+    }
+
 #ifdef SYNC_WAITS_FOR_SYNC
     sync ();
 #else
