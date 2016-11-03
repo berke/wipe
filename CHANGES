@@ -115,3 +115,7 @@ Tue Nov 11 08:06:35 EST 2010
                        deterministic passes (as pointed out by Karako) and not
                        the whole order.  (pointed out by K. Miklos).  Fix
                        unreadable message displayed with the -X option.
+
+Wed Nov  2 23:24:07 PDT 2016
+	version 0.24 - Integrated Debian patches 0.22-4 and 0.22-5 per Joao
+                       Eriberto Mota Filho's suggestion.
