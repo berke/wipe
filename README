@@ -39,7 +39,7 @@ there are several limitations:
   1.Since file meta information such as file name, size,
     creation/modification/access dates as well as directory
     structures are filesystem-specific, and as file systems
-          tend to have extremely various architectures, there is
+    tend to have extremely various architectures, there is
     no hope in seeing a uniform interface for accessing
     low-level filesystem data. Therefore a portable program
     must be filesystem-independent. It must thus use
@@ -52,9 +52,9 @@ there are several limitations:
     written out effectively at the required place, i.e.
     over the old data.
 
-        3.The successfull erasure of off-track data is a function of
-          drive temperature, usage history, drive mechanics and
-          luck.
+  3.The successfull erasure of off-track data is a function of
+    drive temperature, usage history, drive mechanics and
+    luck.
 
 Therefore I cannot and will not guarantee you that the files erased with wipe
 are unrecoverable. SOME RECENT VERSIONS (0.11, 0.12, 0.13) HAVE SERIOUS BUGS:
