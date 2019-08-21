@@ -972,7 +972,7 @@ static int dothejob (char *fn)
 
             if (!o_silent) {
                 if (o_quick) 
-                    fprintf (stderr, "\rWipoing %.32s, pass %d in quick mode   ", fn, i);
+                    fprintf (stderr, "\rWiping %.32s, pass %d in quick mode   ", fn, i);
                 else
                     fprintf (stderr, "\rWiping %.32s, pass %-2d (%-2d)   ", fn, i, p[i]);
                 middle_of_line = 1;
