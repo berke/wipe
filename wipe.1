@@ -206,14 +206,14 @@ argument will not be used). This is of course
 the least secure setting.
 
 .TP 0.5i
-.B -M (select pseudo-random number generator algorythm)
+.B -M (select pseudo-random number generator algorithm)
 
 .PP
 .PD 0
 During the random passes,
 .B wipe
 overwrites the target files with a stream of binary data,
-created by the following choice of algorythms:
+created by the following choice of algorithms:
 .TP 0.5i
 .B l
 will use (depending on your system) your libc's random() or rand() pseudorandom
@@ -227,9 +227,9 @@ with the well-known RC4 cipher. This means that under the same key, Arcfour
 generates exactly the same stream as RC4...
 .TP 0.5i
 .B r
-will use the fresh RC6 algorythm as a PRNG; RC6 is keyed with the 128-bit seed,
+will use the fresh RC6 algorithm as a PRNG; RC6 is keyed with the 128-bit seed,
 and then a null block is repeatedly encrypted to get the pseudo-random stream.
-I guess this sould be quite secure. Of course RC6 with 20 rounds is slower than
+I guess this should be quite secure. Of course RC6 with 20 rounds is slower than
 random(); the compile-time option WEAK_RC6 allows you to use a 4-round version
 of RC6, which is faster. In order to be able to use RC6, wipe must be compiled
 with ENABLE_RC6 defined; see the Makefile for warnings about patent issues.
@@ -427,7 +427,7 @@ is used by default to seed the pseudo-random number generators.
 If set,
 .B wipe
 will execute the command specified in it (using popen()), and will hash the
-command's output with the MD5 message-digest algorythm to get a 128-bit seed
+command's output with the MD5 message-digest algorithm to get a 128-bit seed
 for its PRNG. For example, on systems lacking a /dev/random device, this
 variable might be set in /etc/profile to a shell script which contains various
 commands such as ls, ps, who, last, etc. and which are run asynchronously in
