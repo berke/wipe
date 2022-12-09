@@ -107,7 +107,7 @@ factors, such as : the type of file system the file resides on (in particular,
 whether the file system is a journaling one or not), the type of storage medium
 used, and the least significant bit of the phase of the moon.
 
-Wiping over NFS or over a journalling filesystem (ReiserFS etc.) will most
+Wiping over NFS or over a journaling filesystem (ReiserFS etc.) will most
 probably not work.
 
 Therefore I strongly recommend to call
@@ -301,7 +301,7 @@ tries to cover file names by renaming them; this does NOT guarantee that the
 physical location holding the old file name gets overwritten.  Furthermore,
 after renaming a file, the only way to make sure that the name change is
 physically carried out is to call sync (), which flushes out ALL the disk
-caches of the system, whereas for ading and writing one can use the O_SYNC bit
+caches of the system, whereas for adding and writing one can use the O_SYNC bit
 to get synchronous I/O for one file. As sync () is very slow, calling sync ()
 after every rename () makes filename wiping extremely slow.
 
@@ -367,7 +367,7 @@ verbose (option -i). It won't ask you to type ``yes'' because of the -f option.
 
 .TP 0.5i
 .B wipe -kq -l 1440K /dev/fd0
-Due to various idiosyncracies of the operating system, it's not always easy
+Due to various idiosyncrasies of the operating system, it's not always easy
 to obtain the number of bytes a given device might contain (in fact, that
 quantity can be variable). This is why you sometimes need to tell
 .B wipe
@@ -407,7 +407,7 @@ Note that it is still not possible to file creation date and permission bits
 portably. A wipe utility working at the block device level could be written
 using the ext2fs library.
 
-.SH AUTHOR AND LICENCE
+.SH AUTHOR AND LICENSE
 .B Wipe
 was written by Berke Durak (to find my email address,
 just type
