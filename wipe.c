@@ -77,6 +77,7 @@
 #ifdef HAVE_GETOPT
 #include <getopt.h>
 #endif
+#include <assert.h>
 #include <ctype.h>
 #include <string.h>
 #include <errno.h>
@@ -242,6 +243,9 @@ int o_pass_order[MAX_PASSES] = { -1 };
 
 /* End of Options ***/
 
+static int ignorable_sync_errno (int errno_val);
+static int dosync (int fd, char const *qname);
+static int incname (char *name, size_t len);
 static int wipe_filename_and_remove (char *fn);
 
 /*** do_remove */
@@ -520,73 +524,175 @@ inline static int directory_name_length (char *fn)
 static char valid_filename_chars[64] =
 "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ-.";
 
+static int
+ignorable_sync_errno (int errno_val)
+{
+    return (errno_val == EINVAL
+          || errno_val == EBADF
+          /* HP-UX does this */
+          || errno_val == EISDIR);
+}
+
+
+static int
+dosync (int fd, char const *qname)
+{
+  int err;
+
+#if HAVE_FDATASYNC
+    if (fdatasync (fd) == 0)
+        return 0;
+    err = errno;
+    if ( ! ignorable_sync_errno (err)) {
+        fprintf (stderr, "%s: fdatasync failed", qname);
+        errno = err;
+        return -1;
+    }
+#endif
+
+    if (fsync (fd) == 0)
+        return 0;
+    err = errno;
+    if ( ! ignorable_sync_errno (err)) {
+        fprintf (stderr, "%s: fsync failed", qname);
+        errno = err;
+        return -1;
+    }
+
+    sync ();
+    return 0;
+}
+
+static int
+incname (char *name, size_t len)
+{
+    while (len--) {
+      char const *p = strchr (valid_filename_chars, name[len]);
+
+      /* Given that NAME is composed of bytes from NAMESET,
+         P will never be NULL here.  */
+      assert (p);
+
+      /* If this character has a successor, use it.  */
+      if (p[1]) {
+          name[len] = p[1];
+          return 0;
+      }
+
+      /* Otherwise, set this digit to 0 and increment the prefix.  */
+      name[len] = valid_filename_chars[0];
+    }
+
+    return -1;
+}
+
+#ifndef ISSLASH
+# define ISSLASH(C) ((C) == '/')
+#endif
+
+char *
+last_component (char const *name)
+{
+    char const *base = name;
+    char const *p;
+    int saw_slash = -1;
+
+    while (ISSLASH (*base))
+        base++;
+
+    for (p = base; *p; p++) {
+        if (ISSLASH (*p))
+            saw_slash = -1;
+        else if (saw_slash) {
+            base = p;
+            saw_slash = 0;
+        }
+    }
+
+    return (char *) base;
+}
+
+
 /*** wipe_filename_and_remove */
 
 /* actually, after renaming a file, the only way to make sure that the
  * name change is physically carried out is to call sync (), which flushes
  * out ALL the disk caches of the system, whereas for
- * reading and writing one can use the O_SYNC bit to get syncrhonous
+ * reading and writing one can use the O_SYNC bit to get synchronous
  * I/O for one file. as sync () is very slow, calling sync () after
  * every rename () makes wipe extremely slow.
  */
 
 static int wipe_filename_and_remove (char *fn)
 {
-    int i, j, k, l;
+    int len;
     int r = -1;
     int fn_l, dn_l;
-    /* char *dn; */
-    char *buf[2];
+    char *oldname, *newname;
+    char *dir, *dirc;
+    dirc = strdup(fn);
+    dir = dirname(dirc);
     struct stat st;
-    int t_l; /* target length */
 
-    /* dn = directory_name (fn); */
     fn_l = strlen (fn);
     dn_l = directory_name_length (fn);
 
-    buf[0] = malloc (fn_l + NAME_MAX + 1);
-    buf[1] = malloc (fn_l + NAME_MAX + 1);
+    oldname = malloc (fn_l + NAME_MAX + 1);
+    newname = malloc (fn_l + NAME_MAX + 1);
 
     r = 0;
 
-    t_l = fn_l - dn_l; /* first target length */
+    if (oldname && newname) {
+        strcpy (oldname, fn);
+        strcpy (newname, fn);
 
-    if (buf[0] && buf[1]) {
-        strcpy (buf[0], fn);
-        strcpy (buf[1], fn);
-        for (j = 1, i = 0; i < o_name_max_passes;  j ^= 1, i++) {
-            for (k = o_name_max_tries; k; k--) {
-                l = t_l;
-                fill_random_from_table (buf[j] + dn_l, l,
-                        valid_filename_chars, 0x3f);
-                buf[j][dn_l + l] = 0;
-                if (stat (buf[j], &st)) break;
-            }
+        int dir_fd = open (dir, O_RDONLY | O_DIRECTORY | O_NOCTTY | O_NONBLOCK);
 
-            if (k) {
-                if (!o_silent) {
-                    fprintf (stderr, "\rRenaming %32.32s -> %32.32s", buf[j^1], buf[j]);
-                    middle_of_line = 1;
-                    fflush (stderr);
+
+        char *base = last_component(newname);
+        len = strlen(base);
+        fprintf (stderr, "\n");
+        while (len) {
+            memset (base, valid_filename_chars[0], len);
+            base[len] = 0;
+            do {
+                if (lstat (newname, &st) < 0) {
+                    if (!o_silent) {
+                        fprintf (stderr, "\rRenaming %32.32s -> %32.32s", oldname, newname);
+                        middle_of_line = 1;
+                        fflush (stderr);
+                    }
+                    if (rename (oldname, newname) == 0) {
+                        if (0 <= dir_fd && dosync (dir_fd, dir) != 0)
+                          r = -1;
+                        memcpy (oldname + (base - newname), base, len + 1);
+                        break;
+                      } else {
+                        /* The rename failed: give up on this length.  */
+                        fprintf (stderr, "%.32s: could not rename '%s' to '%s': %s (%d)\n", fn, oldname, newname, strerror (errno), errno);
+                        break;
+                      }
+                } else {
+                    //fprintf (stderr, "%.32s: rename target '%s' exists\n", fn, newname);
                 }
-                if (rename (buf[j^1], buf[j])) {
-                    FLUSH_MIDDLE
-                        fprintf (stderr, "%.32s: could not rename '%s' to '%s': %s (%d)\n",
-                                fn, buf[j^1], buf[j], strerror (errno), errno);
-                    r = -1;
-                    break;
-                }
-                (void) sync ();
-            } else {
-                /* we could not find a target name of desired length, so
-                 * increase target length until we find one. */
-                t_l ++;
-                j ^= 1;
+            } while (incname (base, len));
+            len--;
+        }
+
+
+        if (remove (oldname)) {
+            fprintf (stderr, "%.32s: failed to unlink '%s'\n", fn, oldname);
+            r = -1;
+        }
+        if (0 <= dir_fd) {
+            dosync (dir_fd, dir);
+            if (close (dir_fd) != 0) {
+                fprintf (stderr, "%s: failed to close\n", dir);
+                r = -1;
             }
         }
-        if (remove (buf[j^1])) r = -1;
     }
-    free (buf[0]); free (buf[1]);
+    free (oldname); free (newname); free(dirc);
     return r;
 }
 
@@ -1059,7 +1165,7 @@ static int dothejob (char *fn)
                 }
 
 #ifndef HAVE_OSYNC
-                if (fsync (fd)) {
+                if (dosync (fd,fn)) {
                     fnerror ("fsync error [1]");
                     close (fd);
                     return -1;
@@ -1067,7 +1173,7 @@ static int dothejob (char *fn)
 #endif
             }
 
-            if (fsync (fd)) {
+            if (dosync (fd,fn)) {
                 fnerror ("fsync error [2]");
                 close (fd);
                 return -1;
